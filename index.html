@@ -35,6 +35,7 @@
         <div id="home-screen" class="ui-overlay">
             <h1>Flappy Plane</h1>
             <p>Conquer the Skies!</p>
+            <p class="high-score-text">Best Score: <span id="home-high-score">0</span></p>
             <div class="btn-group">
                 <button id="home-play-btn">Play Now</button>
                 <button id="levels-btn">Select Level</button>
@@ -54,6 +55,7 @@
         <div id="game-over-screen" class="ui-overlay hidden">
             <h1>Game Over</h1>
             <p>Score: <span id="final-score">0</span></p>
+            <p class="high-score-text">Best Score: <span id="gameover-high-score">0</span></p>
             <div class="btn-group">
                 <button id="restart-btn">Try Again</button>
                 <button id="home-btn" class="secondary-btn">Home</button>
@@ -77,6 +79,10 @@
 
         <div id="score-display" class="hidden">0</div>
         <div id="level-display" class="hidden">Level 1</div>
+        <div id="progress-bar-container" class="hidden">
+            <div id="progress-bar"></div>
+        </div>
+        <button id="sound-toggle-btn" class="sound-btn" title="Toggle Sound">🔊</button>
     </div>
     <script src="game.js"></script>
 </body>

@@ -209,6 +209,61 @@ button:active {
 }
 
 #score-display.hidden,
-#level-display.hidden {
+#level-display.hidden,
+#progress-bar-container.hidden {
     display: none;
+}
+
+.high-score-text {
+    font-size: 1.1rem;
+    color: #e67e22;
+    font-weight: 700;
+    margin-top: -0.5rem;
+}
+
+#progress-bar-container {
+    position: absolute;
+    top: 170px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 200px;
+    height: 10px;
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    overflow: hidden;
+    z-index: 5;
+    pointer-events: none;
+}
+
+#progress-bar {
+    width: 0%;
+    height: 100%;
+    background: linear-gradient(90deg, #2ECC71, #27ae60);
+    transition: width 0.2s ease;
+}
+
+.sound-btn {
+    position: absolute;
+    top: 70px;
+    right: 20px;
+    width: 45px;
+    height: 45px;
+    padding: 0;
+    border-radius: 50%;
+    font-size: 1.3rem;
+    z-index: 25;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.6);
+    color: #2c3e50;
+    border: 2px solid #fff;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+.sound-btn:hover {
+    background: var(--primary-color);
+    color: #fff;
 }

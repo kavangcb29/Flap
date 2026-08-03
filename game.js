@@ -6,9 +6,50 @@ let gameState = 'HOME'; // HOME, LEVEL_SELECT, PLAYING, LEVEL_COMPLETE, GAMEOVER
 let frames = 0;
 let score = 0;
 let currentLevel = 1;
-let maxLevelUnlocked = 1;
+let maxLevelUnlocked = parseInt(localStorage.getItem('flappy_max_level') || '1', 10);
+let highScore = parseInt(localStorage.getItem('flappy_high_score') || '0', 10);
 const obstaclesToWin = 10; // Pass 10 obstacles to clear a level
 let obstaclesPassed = 0;
+
+function saveProgress() {
+    localStorage.setItem('flappy_max_level', maxLevelUnlocked);
+    localStorage.setItem('flappy_high_score', highScore);
+}
+
+// --- Sound Effects (Web Audio API) ---
+let soundEnabled = true;
+let audioCtx = null;
+
+function playTone(freq, type, duration, startFreq = freq) {
+    if (!soundEnabled) return;
+    try {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(startFreq, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(freq, audioCtx.currentTime + duration);
+        gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + duration);
+    } catch (e) {}
+}
+
+const soundEffects = {
+    flap: () => playTone(600, 'sine', 0.08, 400),
+    score: () => playTone(1174, 'sine', 0.15, 880),
+    win: () => {
+        playTone(523, 'triangle', 0.1, 523);
+        setTimeout(() => playTone(659, 'triangle', 0.1, 659), 100);
+        setTimeout(() => playTone(783, 'triangle', 0.1, 783), 200);
+        setTimeout(() => playTone(1046, 'triangle', 0.25, 1046), 300);
+    },
+    gameOver: () => playTone(100, 'sawtooth', 0.4, 300)
+};
 
 // --- Theme State ---
 let currentTheme = {
@@ -43,6 +84,13 @@ const restartBtn = document.getElementById('restart-btn');
 const homeBtn = document.getElementById('home-btn');
 const nextLevelBtn = document.getElementById('next-level-btn');
 const homeBtnComplete = document.getElementById('home-btn-complete');
+
+// New HUD & Score UI
+const homeHighScoreElement = document.getElementById('home-high-score');
+const gameoverHighScoreElement = document.getElementById('gameover-high-score');
+const progressBarContainer = document.getElementById('progress-bar-container');
+const progressBar = document.getElementById('progress-bar');
+const soundToggleBtn = document.getElementById('sound-toggle-btn');
 
 // --- Resize ---
 function resizeCanvas() {
@@ -107,6 +155,14 @@ homeBtnComplete.addEventListener('click', (e) => {
     showHome();
 });
 
+if (soundToggleBtn) {
+    soundToggleBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        soundEnabled = !soundEnabled;
+        soundToggleBtn.innerText = soundEnabled ? '🔊' : '🔇';
+    });
+}
+
 
 // --- State Management ---
 function showHome() {
@@ -117,6 +173,8 @@ function showHome() {
     levelCompleteScreen.classList.add('hidden');
     scoreDisplay.classList.add('hidden');
     levelDisplay.classList.add('hidden');
+    if (progressBarContainer) progressBarContainer.classList.add('hidden');
+    if (homeHighScoreElement) homeHighScoreElement.innerText = highScore;
     resetGameObjects();
 }
 
@@ -228,6 +286,10 @@ function startLevel(level) {
     scoreDisplay.classList.remove('hidden');
     levelDisplay.classList.remove('hidden');
     levelDisplay.innerText = `Level ${currentLevel}`;
+    if (progressBarContainer) {
+        progressBarContainer.classList.remove('hidden');
+        if (progressBar) progressBar.style.width = '0%';
+    }
 
     // Reset Data
     score = 0;
@@ -247,22 +309,32 @@ function startLevel(level) {
 
 function winLevel() {
     gameState = 'LEVEL_COMPLETE';
+    soundEffects.win();
     if (currentLevel === maxLevelUnlocked) {
         maxLevelUnlocked++;
+        saveProgress();
     }
 
     levelCompleteScreen.classList.remove('hidden');
     scoreDisplay.classList.add('hidden');
     levelDisplay.classList.add('hidden');
+    if (progressBarContainer) progressBarContainer.classList.add('hidden');
     completedLevelElement.innerText = currentLevel;
 }
 
 function gameOver() {
     gameState = 'GAMEOVER';
+    soundEffects.gameOver();
+    if (score > highScore) {
+        highScore = score;
+        saveProgress();
+    }
     gameOverScreen.classList.remove('hidden');
     scoreDisplay.classList.add('hidden');
     levelDisplay.classList.add('hidden');
+    if (progressBarContainer) progressBarContainer.classList.add('hidden');
     finalScoreElement.innerText = score;
+    if (gameoverHighScoreElement) gameoverHighScoreElement.innerText = highScore;
 }
 
 // --- Game Objects ---
@@ -317,6 +389,7 @@ const plane = {
 
     flap: function () {
         this.velocity = -jumpStrength;
+        soundEffects.flap();
         createParticles(this.x, this.y, 3);
     }
 };
@@ -362,7 +435,16 @@ const obstacles = {
             if (!obs.passed && plane.x > obs.x + this.width) {
                 score++;
                 obstaclesPassed++;
+                soundEffects.score();
+                if (score > highScore) {
+                    highScore = score;
+                    saveProgress();
+                }
                 scoreDisplay.innerText = `${obstaclesPassed}/${obstaclesToWin}`;
+                if (progressBar) {
+                    const percent = Math.min(100, (obstaclesPassed / obstaclesToWin) * 100);
+                    progressBar.style.width = `${percent}%`;
+                }
                 obs.passed = true;
 
                 if (obstaclesPassed >= obstaclesToWin) {
