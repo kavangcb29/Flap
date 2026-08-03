@@ -267,3 +267,30 @@ button:active {
     background: var(--primary-color);
     color: #fff;
 }
+
+.skin-selector {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin: 5px 0;
+}
+
+.skin-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 3px solid rgba(255, 255, 255, 0.5);
+    cursor: pointer;
+    transition: transform 0.2s, border-color 0.2s;
+    padding: 0;
+}
+
+.skin-btn:hover {
+    transform: scale(1.15);
+}
+
+.skin-btn.active {
+    border-color: #fff;
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.9);
+    transform: scale(1.2);
+}

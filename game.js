@@ -48,11 +48,24 @@ const soundEffects = {
         setTimeout(() => playTone(783, 'triangle', 0.1, 783), 200);
         setTimeout(() => playTone(1046, 'triangle', 0.25, 1046), 300);
     },
-    gameOver: () => playTone(100, 'sawtooth', 0.4, 300)
+    gameOver: () => playTone(100, 'sawtooth', 0.4, 300),
+    coin: () => playTone(1567, 'sine', 0.12, 1318),
+    powerup: () => playTone(880, 'triangle', 0.2, 440),
+    shieldBreak: () => playTone(200, 'sawtooth', 0.25, 600)
 };
+
+// --- Plane Skins ---
+const skins = [
+    { name: 'Neon Pink', body: '#f72585', tail: '#b5179e', wing: '#4cc9f0' },
+    { name: 'Golden Bomber', body: '#FFD700', tail: '#DAA520', wing: '#FFFFFF' },
+    { name: 'Cyan Jet', body: '#00FFFF', tail: '#008B8B', wing: '#FFFFFF' },
+    { name: 'Stealth Black', body: '#1a1a1a', tail: '#333333', wing: '#e74c3c' }
+];
+let selectedSkin = parseInt(localStorage.getItem('flappy_skin') || '0', 10);
 
 // --- Theme State ---
 let currentTheme = {
+    name: 'Nature',
     bg: 'linear-gradient(180deg, #87CEEB 0%, #E0F7FA 60%, #A5D6A7 100%)',
     mountains: '#2c3e50',
     pipe: '#2ECC71', pipeBorder: '#27ae60',
@@ -163,6 +176,26 @@ if (soundToggleBtn) {
     });
 }
 
+// Skin Selector Listeners
+const skinButtons = document.querySelectorAll('.skin-btn');
+function updateSkinButtons() {
+    skinButtons.forEach((btn) => {
+        const idx = parseInt(btn.getAttribute('data-skin'), 10);
+        if (idx === selectedSkin) btn.classList.add('active');
+        else btn.classList.remove('active');
+    });
+}
+skinButtons.forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        selectedSkin = parseInt(btn.getAttribute('data-skin'), 10);
+        localStorage.setItem('flappy_skin', selectedSkin);
+        updateSkinButtons();
+        soundEffects.flap();
+    });
+});
+updateSkinButtons();
+
 
 // --- State Management ---
 function showHome() {
@@ -211,6 +244,7 @@ function setDifficulty(level) {
     // Theme 1: Nature
     if (themeIndex === 1) {
         currentTheme = {
+            name: 'Nature',
             bg: 'linear-gradient(180deg, #87CEEB 0%, #E0F7FA 60%, #A5D6A7 100%)',
             mountains: '#2c3e50',
             pipe: '#2ECC71', pipeBorder: '#27ae60',
@@ -220,6 +254,7 @@ function setDifficulty(level) {
     // Theme 2: Desert
     else if (themeIndex === 2) {
         currentTheme = {
+            name: 'Desert',
             bg: 'linear-gradient(180deg, #FFB75E 0%, #ED8F03 100%)',
             mountains: '#8B4513',
             pipe: '#FFD700', pipeBorder: '#DAA520',
@@ -229,6 +264,7 @@ function setDifficulty(level) {
     // Theme 3: Night
     else if (themeIndex === 3) {
         currentTheme = {
+            name: 'Night',
             bg: 'linear-gradient(180deg, #0F2027 0%, #203A43 60%, #2C5364 100%)',
             mountains: '#000000',
             pipe: '#8A2BE2', pipeBorder: '#4B0082',
@@ -238,6 +274,7 @@ function setDifficulty(level) {
     // Theme 4: Snow
     else {
         currentTheme = {
+            name: 'Snow',
             bg: 'linear-gradient(180deg, #E0FFFF 0%, #FFFFFF 100%)',
             mountains: '#B0E0E6',
             pipe: '#FFFFFF', pipeBorder: '#ADD8E6',
@@ -345,6 +382,7 @@ const plane = {
     height: 24,
     velocity: 0,
     angle: 0,
+    shielded: false,
 
     draw: function () {
         ctx.save();
@@ -352,20 +390,32 @@ const plane = {
         this.angle = Math.min(Math.PI / 4, Math.max(-Math.PI / 4, (this.velocity * 0.1)));
         ctx.rotate(this.angle);
 
+        if (this.shielded) {
+            ctx.strokeStyle = '#00FFFF';
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+            ctx.arc(0, 0, 24, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.fillStyle = 'rgba(0, 255, 255, 0.2)';
+            ctx.fill();
+        }
+
+        const skin = skins[selectedSkin] || skins[0];
+
         // Body
-        ctx.fillStyle = currentTheme.planeBody;
+        ctx.fillStyle = skin.body;
         ctx.beginPath();
         ctx.ellipse(0, 0, this.width / 2, this.height / 2, 0, 0, Math.PI * 2);
         ctx.fill();
         // Tail
-        ctx.fillStyle = currentTheme.planeTail;
+        ctx.fillStyle = skin.tail;
         ctx.beginPath();
         ctx.moveTo(-15, -5);
         ctx.lineTo(-25, -15);
         ctx.lineTo(-15, 5);
         ctx.fill();
         // Wing
-        ctx.fillStyle = currentTheme.planeWing;
+        ctx.fillStyle = skin.wing;
         ctx.beginPath();
         ctx.ellipse(5, 5, 10, 4, Math.PI / 4, 0, Math.PI * 2);
         ctx.fill();
@@ -423,12 +473,26 @@ const obstacles = {
 
             // Top Pipe
             if (pRight > obs.x && pLeft < obs.x + this.width && pTop < obs.topHeight) {
-                gameOver();
+                if (plane.shielded) {
+                    plane.shielded = false;
+                    soundEffects.shieldBreak();
+                    obs.topHeight = -100; // remove obstruction
+                    createParticles(plane.x, plane.y, 15);
+                } else {
+                    gameOver();
+                }
             }
             // Bottom Pipe
             const bottomPipeY = obs.topHeight + pipeGap;
             if (pRight > obs.x && pLeft < obs.x + this.width && pBottom > bottomPipeY) {
-                gameOver();
+                if (plane.shielded) {
+                    plane.shielded = false;
+                    soundEffects.shieldBreak();
+                    obs.topHeight = canvas.height + 100; // remove obstruction
+                    createParticles(plane.x, plane.y, 15);
+                } else {
+                    gameOver();
+                }
             }
 
             // Score
@@ -519,17 +583,108 @@ function handleParticles() {
     }
 }
 
+const collectibles = {
+    list: [],
+    update: function () {
+        if (frames % 120 === 60 && Math.random() < 0.65) {
+            const type = Math.random() < 0.75 ? 'coin' : 'shield';
+            const y = Math.random() * (canvas.height - 200) + 100;
+            this.list.push({ x: canvas.width, y: y, type: type, collected: false });
+        }
+        for (let i = 0; i < this.list.length; i++) {
+            let item = this.list[i];
+            item.x -= gameSpeed;
+            if (!item.collected) {
+                const dx = plane.x - item.x;
+                const dy = plane.y - item.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                if (dist < 28) {
+                    item.collected = true;
+                    if (item.type === 'coin') {
+                        score += 2;
+                        soundEffects.coin();
+                        createParticles(item.x, item.y, 8);
+                    } else if (item.type === 'shield') {
+                        plane.shielded = true;
+                        soundEffects.powerup();
+                        createParticles(item.x, item.y, 10);
+                    }
+                    if (score > highScore) {
+                        highScore = score;
+                        saveProgress();
+                    }
+                    scoreDisplay.innerText = `${obstaclesPassed}/${obstaclesToWin}`;
+                }
+            }
+            if (item.x < -30 || item.collected) {
+                this.list.splice(i, 1);
+                i--;
+            }
+        }
+    },
+    draw: function () {
+        for (let item of this.list) {
+            ctx.save();
+            ctx.translate(item.x, item.y);
+            if (item.type === 'coin') {
+                ctx.fillStyle = '#FFD700';
+                ctx.strokeStyle = '#DAA520';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(0, 0, 12, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+                ctx.fillStyle = '#fff';
+                ctx.font = 'bold 12px Outfit, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('$', 0, 0);
+            } else {
+                ctx.fillStyle = 'rgba(0, 255, 255, 0.6)';
+                ctx.strokeStyle = '#00FFFF';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(0, 0, 14, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+            }
+            ctx.restore();
+        }
+    },
+    reset: function () {
+        this.list = [];
+    }
+};
+
 const background = {
     mountains: [],
     clouds: [],
+    stars: [],
+    snowflakes: [],
     init: function () {
-        // Init clouds
         for (let i = 0; i < 5; i++) {
             this.clouds.push({
                 x: Math.random() * canvas.width,
                 y: Math.random() * (canvas.height / 2),
-                speed: 0.1 + Math.random() * 0.2, // Much slower clouds
+                speed: 0.1 + Math.random() * 0.2,
                 size: 30 + Math.random() * 50
+            });
+        }
+        for (let i = 0; i < 40; i++) {
+            this.stars.push({
+                x: Math.random() * window.innerWidth,
+                y: Math.random() * (window.innerHeight * 0.6),
+                size: 1 + Math.random() * 2,
+                alpha: Math.random()
+            });
+        }
+        for (let i = 0; i < 35; i++) {
+            this.snowflakes.push({
+                x: Math.random() * window.innerWidth,
+                y: Math.random() * window.innerHeight,
+                size: 2 + Math.random() * 3,
+                vy: 1 + Math.random() * 2,
+                vx: (Math.random() - 0.5) * 1
             });
         }
     },
@@ -538,8 +693,29 @@ const background = {
             c.x -= c.speed;
             if (c.x + c.size * 2 < 0) c.x = canvas.width + c.size;
         }
+        if (currentTheme.name === 'Snow') {
+            for (let s of this.snowflakes) {
+                s.y += s.vy;
+                s.x += s.vx;
+                if (s.y > canvas.height) {
+                    s.y = -10;
+                    s.x = Math.random() * canvas.width;
+                }
+            }
+        }
     },
     draw: function () {
+        if (currentTheme.name === 'Night') {
+            ctx.fillStyle = '#ffffff';
+            for (let s of this.stars) {
+                ctx.globalAlpha = 0.4 + Math.sin(frames * 0.05 + s.x) * 0.4;
+                ctx.beginPath();
+                ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.globalAlpha = 1;
+        }
+
         // Draw Mountains
         ctx.fillStyle = currentTheme.mountains;
         ctx.beginPath();
@@ -562,14 +738,25 @@ const background = {
             ctx.arc(c.x + c.size * 1.5, c.y, c.size * 0.8, 0, Math.PI * 2);
             ctx.fill();
         }
+
+        if (currentTheme.name === 'Snow') {
+            ctx.fillStyle = '#ffffff';
+            for (let s of this.snowflakes) {
+                ctx.beginPath();
+                ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
     }
 };
 background.init();
 
 function resetGameObjects() {
     obstacles.reset();
+    collectibles.reset();
     plane.y = canvas.height / 2;
     plane.velocity = 0;
+    plane.shielded = false;
 }
 
 function loop() {
@@ -581,6 +768,9 @@ function loop() {
 
         obstacles.update();
         obstacles.draw();
+
+        collectibles.update();
+        collectibles.draw();
 
         handleParticles();
 
