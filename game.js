@@ -158,6 +158,9 @@ const levelGrid = document.getElementById('level-grid');
 const trophiesScreen = document.getElementById('trophies-screen');
 const trophyList = document.getElementById('trophy-list');
 const pauseScreen = document.getElementById('pause-screen');
+const cinematicScreen = document.getElementById('cinematic-screen');
+const heroPreviewBanner = document.getElementById('hero-preview-banner');
+const closeCinematicBtn = document.getElementById('close-cinematic-btn');
 
 // Buttons
 const homePlayBtn = document.getElementById('home-play-btn');
@@ -275,6 +278,18 @@ if (pauseHomeBtn) {
         showHome();
     });
 }
+if (heroPreviewBanner) {
+    heroPreviewBanner.addEventListener('click', (e) => {
+        e.stopPropagation();
+        showCinematic();
+    });
+}
+if (closeCinematicBtn) {
+    closeCinematicBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        showHome();
+    });
+}
 
 backHomeBtn.addEventListener('click', (e) => {
     e.stopPropagation();
@@ -340,6 +355,7 @@ function showHome() {
     homeScreen.classList.remove('hidden');
     levelScreen.classList.add('hidden');
     if (trophiesScreen) trophiesScreen.classList.add('hidden');
+    if (cinematicScreen) cinematicScreen.classList.add('hidden');
     gameOverScreen.classList.add('hidden');
     levelCompleteScreen.classList.add('hidden');
     scoreDisplay.classList.add('hidden');
@@ -348,6 +364,12 @@ function showHome() {
     if (pauseBtn) pauseBtn.classList.add('hidden');
     if (homeHighScoreElement) homeHighScoreElement.innerText = highScore;
     resetGameObjects();
+}
+
+function showCinematic() {
+    gameState = 'CINEMATIC';
+    homeScreen.classList.add('hidden');
+    if (cinematicScreen) cinematicScreen.classList.remove('hidden');
 }
 
 function showTrophies() {
@@ -482,6 +504,7 @@ function startLevel(level) {
     homeScreen.classList.add('hidden');
     levelScreen.classList.add('hidden');
     if (trophiesScreen) trophiesScreen.classList.add('hidden');
+    if (cinematicScreen) cinematicScreen.classList.add('hidden');
     gameOverScreen.classList.add('hidden');
     levelCompleteScreen.classList.add('hidden');
 
