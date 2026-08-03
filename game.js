@@ -8,12 +8,16 @@ let score = 0;
 let currentLevel = 1;
 let maxLevelUnlocked = parseInt(localStorage.getItem('flappy_max_level') || '1', 10);
 let highScore = parseInt(localStorage.getItem('flappy_high_score') || '0', 10);
+let totalCoins = parseInt(localStorage.getItem('flappy_coins') || '0', 10);
+let shieldsBroken = parseInt(localStorage.getItem('flappy_shields_broken') || '0', 10);
 const obstaclesToWin = 10; // Pass 10 obstacles to clear a level
 let obstaclesPassed = 0;
 
 function saveProgress() {
     localStorage.setItem('flappy_max_level', maxLevelUnlocked);
     localStorage.setItem('flappy_high_score', highScore);
+    localStorage.setItem('flappy_coins', totalCoins);
+    localStorage.setItem('flappy_shields_broken', shieldsBroken);
 }
 
 // --- Sound Effects (Web Audio API) ---
@@ -51,8 +55,71 @@ const soundEffects = {
     gameOver: () => playTone(100, 'sawtooth', 0.4, 300),
     coin: () => playTone(1567, 'sine', 0.12, 1318),
     powerup: () => playTone(880, 'triangle', 0.2, 440),
-    shieldBreak: () => playTone(200, 'sawtooth', 0.25, 600)
+    shieldBreak: () => playTone(200, 'sawtooth', 0.25, 600),
+    achievement: () => {
+        playTone(587.33, 'triangle', 0.12, 587.33);
+        setTimeout(() => playTone(880, 'triangle', 0.25, 880), 120);
+    }
 };
+
+// --- Procedural Chiptune Music ---
+let musicEnabled = false;
+let musicInterval = null;
+const chiptuneNotes = [261.63, 329.63, 392.00, 523.25, 392.00, 329.63, 293.66, 349.23, 440.00, 587.33];
+let currentNoteIndex = 0;
+function toggleMusic() {
+    musicEnabled = !musicEnabled;
+    const btn = document.getElementById('music-toggle-btn');
+    if (btn) btn.innerText = musicEnabled ? '🎵' : '🔇';
+    if (musicEnabled) {
+        if (!musicInterval) {
+            musicInterval = setInterval(() => {
+                if (musicEnabled && gameState === 'PLAYING') {
+                    playTone(chiptuneNotes[currentNoteIndex], 'square', 0.1, chiptuneNotes[currentNoteIndex]);
+                    currentNoteIndex = (currentNoteIndex + 1) % chiptuneNotes.length;
+                }
+            }, 180);
+        }
+    } else if (musicInterval) {
+        clearInterval(musicInterval);
+        musicInterval = null;
+    }
+}
+
+// --- Achievements & Trophies System ---
+const achievements = [
+    { id: 'first_flight', name: 'First Flight', desc: 'Complete Level 1', icon: '✈️', unlocked: false },
+    { id: 'coin_collector', name: 'Coin Collector', desc: 'Collect 10 Coins total', icon: '💰', unlocked: false },
+    { id: 'shield_master', name: 'Shield Master', desc: 'Break 3 Pipes with a Shield', icon: '🛡️', unlocked: false },
+    { id: 'night_owl', name: 'Night Owl', desc: 'Reach Level 11 (Night Theme)', icon: '🌙', unlocked: false },
+    { id: 'centurion', name: 'Centurion', desc: 'Score 50 points in one run', icon: '👑', unlocked: false }
+];
+
+const savedAchievements = JSON.parse(localStorage.getItem('flappy_achievements') || '[]');
+achievements.forEach(a => {
+    if (savedAchievements.includes(a.id)) a.unlocked = true;
+});
+
+function unlockAchievement(id) {
+    const ach = achievements.find(a => a.id === id);
+    if (ach && !ach.unlocked) {
+        ach.unlocked = true;
+        savedAchievements.push(id);
+        localStorage.setItem('flappy_achievements', JSON.stringify(savedAchievements));
+        soundEffects.achievement();
+        showAchievementToast(ach.name);
+    }
+}
+
+function showAchievementToast(name) {
+    const toast = document.getElementById('achievement-toast');
+    const descEl = document.getElementById('toast-desc');
+    if (toast && descEl) {
+        descEl.innerText = name;
+        toast.classList.remove('hidden');
+        setTimeout(() => toast.classList.add('hidden'), 3500);
+    }
+}
 
 // --- Plane Skins ---
 const skins = [
@@ -88,15 +155,27 @@ const scoreDisplay = document.getElementById('score-display');
 const levelDisplay = document.getElementById('level-display');
 const finalScoreElement = document.getElementById('final-score');
 const levelGrid = document.getElementById('level-grid');
+const trophiesScreen = document.getElementById('trophies-screen');
+const trophyList = document.getElementById('trophy-list');
+const pauseScreen = document.getElementById('pause-screen');
 
 // Buttons
 const homePlayBtn = document.getElementById('home-play-btn');
 const levelsBtn = document.getElementById('levels-btn');
+const trophiesBtn = document.getElementById('trophies-btn');
+const backTrophiesBtn = document.getElementById('back-trophies-btn');
 const backHomeBtn = document.getElementById('back-home-btn');
 const restartBtn = document.getElementById('restart-btn');
 const homeBtn = document.getElementById('home-btn');
 const nextLevelBtn = document.getElementById('next-level-btn');
 const homeBtnComplete = document.getElementById('home-btn-complete');
+
+// Pause & Music Buttons
+const pauseBtn = document.getElementById('pause-btn');
+const musicToggleBtn = document.getElementById('music-toggle-btn');
+const resumeBtn = document.getElementById('resume-btn');
+const pauseRestartBtn = document.getElementById('pause-restart-btn');
+const pauseHomeBtn = document.getElementById('pause-home-btn');
 
 // New HUD & Score UI
 const homeHighScoreElement = document.getElementById('home-high-score');
@@ -117,12 +196,25 @@ resizeCanvas();
 function handleInput() {
     if (gameState === 'PLAYING') {
         plane.flap();
-    } else if (gameState === 'HOME') {
-        // Maybe click background to start? Nah, buttons are better.
+    }
+}
+function togglePause() {
+    if (gameState === 'PLAYING') {
+        gameState = 'PAUSED';
+        if (pauseScreen) pauseScreen.classList.remove('hidden');
+    } else if (gameState === 'PAUSED') {
+        gameState = 'PLAYING';
+        if (pauseScreen) pauseScreen.classList.add('hidden');
     }
 }
 window.addEventListener('keydown', (e) => {
-    if (e.code === 'Space') handleInput();
+    if (e.code === 'Space') {
+        e.preventDefault();
+        handleInput();
+    } else if (e.code === 'KeyP' || e.code === 'Escape') {
+        e.preventDefault();
+        togglePause();
+    }
 });
 window.addEventListener('mousedown', () => {
     handleInput();
@@ -131,13 +223,58 @@ window.addEventListener('mousedown', () => {
 // --- Button Listeners ---
 homePlayBtn.addEventListener('click', (e) => {
     e.stopPropagation();
-    startLevel(currentLevel); // Continue from last current
+    startLevel(currentLevel);
 });
 
 levelsBtn.addEventListener('click', (e) => {
     e.stopPropagation();
     showLevelSelect();
 });
+
+if (trophiesBtn) {
+    trophiesBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        showTrophies();
+    });
+}
+if (backTrophiesBtn) {
+    backTrophiesBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        showHome();
+    });
+}
+if (pauseBtn) {
+    pauseBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        togglePause();
+    });
+}
+if (musicToggleBtn) {
+    musicToggleBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleMusic();
+    });
+}
+if (resumeBtn) {
+    resumeBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        togglePause();
+    });
+}
+if (pauseRestartBtn) {
+    pauseRestartBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (pauseScreen) pauseScreen.classList.add('hidden');
+        startLevel(currentLevel);
+    });
+}
+if (pauseHomeBtn) {
+    pauseHomeBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (pauseScreen) pauseScreen.classList.add('hidden');
+        showHome();
+    });
+}
 
 backHomeBtn.addEventListener('click', (e) => {
     e.stopPropagation();
@@ -202,13 +339,41 @@ function showHome() {
     gameState = 'HOME';
     homeScreen.classList.remove('hidden');
     levelScreen.classList.add('hidden');
+    if (trophiesScreen) trophiesScreen.classList.add('hidden');
     gameOverScreen.classList.add('hidden');
     levelCompleteScreen.classList.add('hidden');
     scoreDisplay.classList.add('hidden');
     levelDisplay.classList.add('hidden');
     if (progressBarContainer) progressBarContainer.classList.add('hidden');
+    if (pauseBtn) pauseBtn.classList.add('hidden');
     if (homeHighScoreElement) homeHighScoreElement.innerText = highScore;
     resetGameObjects();
+}
+
+function showTrophies() {
+    gameState = 'TROPHIES';
+    homeScreen.classList.add('hidden');
+    if (trophiesScreen) {
+        trophiesScreen.classList.remove('hidden');
+        renderTrophyList();
+    }
+}
+
+function renderTrophyList() {
+    if (!trophyList) return;
+    trophyList.innerHTML = '';
+    achievements.forEach(a => {
+        const item = document.createElement('div');
+        item.className = `trophy-item ${a.unlocked ? 'unlocked' : 'locked'}`;
+        item.innerHTML = `
+            <div class="trophy-icon">${a.icon}</div>
+            <div class="trophy-info">
+                <h4>${a.name}</h4>
+                <p>${a.desc}</p>
+            </div>
+        `;
+        trophyList.appendChild(item);
+    });
 }
 
 function showLevelSelect() {
@@ -316,12 +481,14 @@ function startLevel(level) {
     // Hide UIs
     homeScreen.classList.add('hidden');
     levelScreen.classList.add('hidden');
+    if (trophiesScreen) trophiesScreen.classList.add('hidden');
     gameOverScreen.classList.add('hidden');
     levelCompleteScreen.classList.add('hidden');
 
     // Show HUD
     scoreDisplay.classList.remove('hidden');
     levelDisplay.classList.remove('hidden');
+    if (pauseBtn) pauseBtn.classList.remove('hidden');
     levelDisplay.innerText = `Level ${currentLevel}`;
     if (progressBarContainer) {
         progressBarContainer.classList.remove('hidden');
@@ -340,13 +507,13 @@ function startLevel(level) {
     plane.y = canvas.height / 2;
     plane.velocity = 0;
     plane.angle = 0;
-
-    // Do NOT call loop() here, it is already running globally.
 }
 
 function winLevel() {
     gameState = 'LEVEL_COMPLETE';
     soundEffects.win();
+    unlockAchievement('first_flight');
+    if (currentLevel >= 11) unlockAchievement('night_owl');
     if (currentLevel === maxLevelUnlocked) {
         maxLevelUnlocked++;
         saveProgress();
@@ -355,6 +522,7 @@ function winLevel() {
     levelCompleteScreen.classList.remove('hidden');
     scoreDisplay.classList.add('hidden');
     levelDisplay.classList.add('hidden');
+    if (pauseBtn) pauseBtn.classList.add('hidden');
     if (progressBarContainer) progressBarContainer.classList.add('hidden');
     completedLevelElement.innerText = currentLevel;
 }
@@ -362,6 +530,7 @@ function winLevel() {
 function gameOver() {
     gameState = 'GAMEOVER';
     soundEffects.gameOver();
+    screenShake = 15;
     if (score > highScore) {
         highScore = score;
         saveProgress();
@@ -369,6 +538,7 @@ function gameOver() {
     gameOverScreen.classList.remove('hidden');
     scoreDisplay.classList.add('hidden');
     levelDisplay.classList.add('hidden');
+    if (pauseBtn) pauseBtn.classList.add('hidden');
     if (progressBarContainer) progressBarContainer.classList.add('hidden');
     finalScoreElement.innerText = score;
     if (gameoverHighScoreElement) gameoverHighScoreElement.innerText = highScore;
@@ -420,12 +590,25 @@ const plane = {
         ctx.ellipse(5, 5, 10, 4, Math.PI / 4, 0, Math.PI * 2);
         ctx.fill();
 
+        // Propeller Animation
+        ctx.save();
+        ctx.translate(18, 0);
+        ctx.rotate(frames * 0.5);
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+        ctx.fillRect(-2, -11, 4, 22);
+        ctx.restore();
+
         ctx.restore();
     },
 
     update: function () {
         this.velocity += gravity;
         this.y += this.velocity;
+
+        // Spawn Jet Engine Combustion Exhaust & Smoke Trails
+        if (gameState === 'PLAYING') {
+            createJetExhaust(this.x - 18, this.y);
+        }
 
         if (this.y + this.height / 2 > canvas.height) {
             this.y = canvas.height - this.height / 2;
@@ -476,6 +659,11 @@ const obstacles = {
                 if (plane.shielded) {
                     plane.shielded = false;
                     soundEffects.shieldBreak();
+                    screenShake = 10;
+                    shieldsBroken++;
+                    saveProgress();
+                    if (shieldsBroken >= 3) unlockAchievement('shield_master');
+                    addFloatingText(plane.x, plane.y - 25, 'SHIELD BREAK!', '#00FFFF');
                     obs.topHeight = -100; // remove obstruction
                     createParticles(plane.x, plane.y, 15);
                 } else {
@@ -488,6 +676,11 @@ const obstacles = {
                 if (plane.shielded) {
                     plane.shielded = false;
                     soundEffects.shieldBreak();
+                    screenShake = 10;
+                    shieldsBroken++;
+                    saveProgress();
+                    if (shieldsBroken >= 3) unlockAchievement('shield_master');
+                    addFloatingText(plane.x, plane.y - 25, 'SHIELD BREAK!', '#00FFFF');
                     obs.topHeight = canvas.height + 100; // remove obstruction
                     createParticles(plane.x, plane.y, 15);
                 } else {
@@ -500,6 +693,8 @@ const obstacles = {
                 score++;
                 obstaclesPassed++;
                 soundEffects.score();
+                addFloatingText(plane.x + 20, plane.y - 15, '+1', '#2ECC71');
+                if (score >= 50) unlockAchievement('centurion');
                 if (score > highScore) {
                     highScore = score;
                     saveProgress();
@@ -560,7 +755,30 @@ function createParticles(x, y, count) {
             vx: (Math.random() - 0.5) * 2 - 2,
             vy: (Math.random() - 0.5) * 2,
             life: 20 + Math.random() * 10,
-            color: `hsl(${Math.random() * 50 + 100}, 100%, 70%)` // Greenish particles
+            color: `hsl(${Math.random() * 50 + 100}, 100%, 70%)`
+        });
+    }
+}
+function createJetExhaust(x, y) {
+    // Flame Particle
+    particlesList.push({
+        x: x,
+        y: y + (Math.random() - 0.5) * 4,
+        vx: -3 - Math.random() * 2,
+        vy: (Math.random() - 0.5) * 1,
+        life: 12 + Math.random() * 6,
+        color: Math.random() < 0.5 ? '#FF4500' : '#FFD700'
+    });
+    // Smoke Contrail
+    if (frames % 2 === 0) {
+        particlesList.push({
+            x: x - 5,
+            y: y + (Math.random() - 0.5) * 6,
+            vx: -1.5 - Math.random(),
+            vy: (Math.random() - 0.5) * 0.5,
+            life: 25 + Math.random() * 10,
+            color: 'rgba(255, 255, 255, 0.4)',
+            sizeDelta: 0.15
         });
     }
 }
@@ -571,13 +789,38 @@ function handleParticles() {
         p.y += p.vy;
         p.life--;
         ctx.fillStyle = p.color;
-        ctx.globalAlpha = p.life / 30;
+        ctx.globalAlpha = Math.max(0, p.life / 30);
         ctx.beginPath();
-        ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
+        ctx.arc(p.x, p.y, p.sizeDelta ? (3 + (30 - p.life) * p.sizeDelta) : 3, 0, Math.PI * 2);
         ctx.fill();
         ctx.globalAlpha = 1;
         if (p.life <= 0) {
             particlesList.splice(i, 1);
+            i--;
+        }
+    }
+}
+
+// --- Screen Shake & Floating Text ---
+let screenShake = 0;
+const floatingTexts = [];
+function addFloatingText(x, y, text, color) {
+    floatingTexts.push({ x: x, y: y, text: text, color: color, life: 40 });
+}
+function handleFloatingTexts() {
+    for (let i = 0; i < floatingTexts.length; i++) {
+        let ft = floatingTexts[i];
+        ft.y -= 1.2;
+        ft.life--;
+        ctx.save();
+        ctx.fillStyle = ft.color;
+        ctx.font = '800 16px Outfit, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.globalAlpha = Math.max(0, ft.life / 40);
+        ctx.fillText(ft.text, ft.x, ft.y);
+        ctx.restore();
+        if (ft.life <= 0) {
+            floatingTexts.splice(i, 1);
             i--;
         }
     }
@@ -602,11 +845,16 @@ const collectibles = {
                     item.collected = true;
                     if (item.type === 'coin') {
                         score += 2;
+                        totalCoins++;
+                        saveProgress();
+                        if (totalCoins >= 10) unlockAchievement('coin_collector');
                         soundEffects.coin();
+                        addFloatingText(item.x, item.y - 15, '+$2 COIN!', '#FFD700');
                         createParticles(item.x, item.y, 8);
                     } else if (item.type === 'shield') {
                         plane.shielded = true;
                         soundEffects.powerup();
+                        addFloatingText(item.x, item.y - 15, 'SHIELD EQUIPPED!', '#00FFFF');
                         createParticles(item.x, item.y, 10);
                     }
                     if (score > highScore) {
@@ -763,6 +1011,15 @@ function loop() {
     if (gameState === 'PLAYING') {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+        ctx.save();
+        if (screenShake > 0) {
+            const dx = (Math.random() - 0.5) * screenShake * 2;
+            const dy = (Math.random() - 0.5) * screenShake * 2;
+            ctx.translate(dx, dy);
+            screenShake *= 0.88;
+            if (screenShake < 0.5) screenShake = 0;
+        }
+
         background.update();
         background.draw();
 
@@ -773,9 +1030,12 @@ function loop() {
         collectibles.draw();
 
         handleParticles();
+        handleFloatingTexts();
 
         plane.update();
         plane.draw();
+
+        ctx.restore();
 
         frames++;
         requestAnimationFrame(loop);
@@ -785,7 +1045,7 @@ function loop() {
         background.update();
         background.draw();
         if (gameState !== 'HOME') {
-            plane.draw(); // Show plane in background if not home
+            plane.draw();
         }
         requestAnimationFrame(loop);
     }
