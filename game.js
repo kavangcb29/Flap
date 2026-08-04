@@ -576,10 +576,14 @@ const plane = {
     velocity: 0,
     angle: 0,
     shielded: false,
+    invincible: 0,
 
     draw: function () {
         ctx.save();
         ctx.translate(this.x, this.y);
+        if (this.invincible > 0 && Math.floor(frames / 4) % 2 === 0) {
+            ctx.globalAlpha = 0.4;
+        }
         this.angle = Math.min(Math.PI / 4, Math.max(-Math.PI / 4, (this.velocity * 0.1)));
         ctx.rotate(this.angle);
 
@@ -587,9 +591,9 @@ const plane = {
             ctx.strokeStyle = '#00FFFF';
             ctx.lineWidth = 2.5;
             ctx.beginPath();
-            ctx.arc(0, 0, 24, 0, Math.PI * 2);
+            ctx.arc(0, 0, 26, 0, Math.PI * 2);
             ctx.stroke();
-            ctx.fillStyle = 'rgba(0, 255, 255, 0.2)';
+            ctx.fillStyle = 'rgba(0, 255, 255, 0.25)';
             ctx.fill();
         }
 
@@ -625,6 +629,9 @@ const plane = {
     },
 
     update: function () {
+        if (this.invincible > 0) {
+            this.invincible--;
+        }
         this.velocity += gravity;
         this.y += this.velocity;
 
@@ -671,41 +678,38 @@ const obstacles = {
             let obs = this.list[i];
             obs.x -= gameSpeed;
 
+            if (obs.destroyed) {
+                continue;
+            }
+
             // Collision
             const pLeft = plane.x - plane.width / 2 + 5;
             const pRight = plane.x + plane.width / 2 - 5;
             const pTop = plane.y - plane.height / 2 + 5;
             const pBottom = plane.y + plane.height / 2 - 5;
 
-            // Top Pipe
-            if (pRight > obs.x && pLeft < obs.x + this.width && pTop < obs.topHeight) {
-                if (plane.shielded) {
-                    plane.shielded = false;
-                    soundEffects.shieldBreak();
-                    screenShake = 10;
-                    shieldsBroken++;
-                    saveProgress();
-                    if (shieldsBroken >= 3) unlockAchievement('shield_master');
-                    addFloatingText(plane.x, plane.y - 25, 'SHIELD BREAK!', '#00FFFF');
-                    obs.topHeight = -100; // remove obstruction
-                    createParticles(plane.x, plane.y, 15);
-                } else {
-                    gameOver();
-                }
-            }
-            // Bottom Pipe
             const bottomPipeY = obs.topHeight + pipeGap;
-            if (pRight > obs.x && pLeft < obs.x + this.width && pBottom > bottomPipeY) {
-                if (plane.shielded) {
-                    plane.shielded = false;
-                    soundEffects.shieldBreak();
-                    screenShake = 10;
-                    shieldsBroken++;
-                    saveProgress();
-                    if (shieldsBroken >= 3) unlockAchievement('shield_master');
-                    addFloatingText(plane.x, plane.y - 25, 'SHIELD BREAK!', '#00FFFF');
-                    obs.topHeight = canvas.height + 100; // remove obstruction
-                    createParticles(plane.x, plane.y, 15);
+
+            const hitTop = (pRight > obs.x && pLeft < obs.x + this.width && pTop < obs.topHeight);
+            const hitBottom = (pRight > obs.x && pLeft < obs.x + this.width && pBottom > bottomPipeY);
+
+            if (hitTop || hitBottom) {
+                if (plane.shielded || plane.invincible > 0) {
+                    if (plane.shielded) {
+                        plane.shielded = false;
+                        plane.invincible = 60; // 60 frames (1 second) of invincibility
+                        obs.destroyed = true;  // Mark obstacle destroyed so it never collides again
+                        soundEffects.shieldBreak();
+                        screenShake = 12;
+                        shieldsBroken++;
+                        saveProgress();
+                        if (shieldsBroken >= 3) unlockAchievement('shield_master');
+                        addFloatingText(plane.x, plane.y - 25, 'SHIELD BREAK!', '#00FFFF');
+                        createParticles(obs.x + this.width / 2, hitTop ? obs.topHeight / 2 : bottomPipeY + 80, 25);
+                    } else if (plane.invincible > 0) {
+                        obs.destroyed = true;
+                        createParticles(obs.x + this.width / 2, hitTop ? obs.topHeight / 2 : bottomPipeY + 80, 15);
+                    }
                 } else {
                     gameOver();
                 }
@@ -747,6 +751,8 @@ const obstacles = {
         ctx.lineWidth = 2;
 
         for (let obs of this.list) {
+            if (obs.destroyed) continue;
+
             // Top Pipe
             ctx.fillRect(obs.x, 0, this.width, obs.topHeight);
             ctx.strokeRect(obs.x, 0, this.width, obs.topHeight);
@@ -864,7 +870,7 @@ const collectibles = {
                 const dx = plane.x - item.x;
                 const dy = plane.y - item.y;
                 const dist = Math.sqrt(dx * dx + dy * dy);
-                if (dist < 28) {
+                if (dist < 38) {
                     item.collected = true;
                     if (item.type === 'coin') {
                         score += 2;
@@ -1028,6 +1034,7 @@ function resetGameObjects() {
     plane.y = canvas.height / 2;
     plane.velocity = 0;
     plane.shielded = false;
+    plane.invincible = 0;
 }
 
 function loop() {
