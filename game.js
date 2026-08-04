@@ -2,6 +2,9 @@ const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
 // --- Game State & Config ---
+let graphicsMode = localStorage.getItem('graphics_mode') || '4k';
+const bgImage4K = new Image();
+bgImage4K.src = 'flappy_plane_screenshot.jpg';
 let gameState = 'HOME'; // HOME, LEVEL_SELECT, PLAYING, LEVEL_COMPLETE, GAMEOVER
 let frames = 0;
 let score = 0;
@@ -352,6 +355,67 @@ skinButtons.forEach((btn) => {
 });
 updateSkinButtons();
 
+// --- Graphics Engine Modes ---
+const graphicsToggleBtn = document.getElementById('graphics-toggle-btn');
+const graphicsBtns = document.querySelectorAll('.graphics-btn');
+const crtOverlay = document.getElementById('crt-overlay');
+
+function setGraphicsMode(mode, showToastMsg = false) {
+    graphicsMode = mode;
+    localStorage.setItem('graphics_mode', mode);
+
+    if (mode === '4k') {
+        if (graphicsToggleBtn) {
+            graphicsToggleBtn.innerText = '4K';
+            graphicsToggleBtn.style.background = 'linear-gradient(45deg, #FFD700, #FF8C00)';
+            graphicsToggleBtn.style.color = '#000';
+        }
+        if (crtOverlay) crtOverlay.classList.add('hidden');
+        if (showToastMsg) showAchievementToast('🌟 4K ULTRA UHD Graphics');
+    } else if (mode === 'high') {
+        if (graphicsToggleBtn) {
+            graphicsToggleBtn.innerText = 'HD';
+            graphicsToggleBtn.style.background = 'rgba(255, 255, 255, 0.8)';
+            graphicsToggleBtn.style.color = '#2c3e50';
+        }
+        if (crtOverlay) crtOverlay.classList.add('hidden');
+        if (showToastMsg) showAchievementToast('⚡ HIGH HD Arcade Graphics');
+    } else if (mode === 'retro') {
+        if (graphicsToggleBtn) {
+            graphicsToggleBtn.innerText = '8B';
+            graphicsToggleBtn.style.background = '#9d4edd';
+            graphicsToggleBtn.style.color = '#fff';
+        }
+        if (crtOverlay) crtOverlay.classList.remove('hidden');
+        if (showToastMsg) showAchievementToast('👾 RETRO 8-Bit Pixel Graphics');
+    }
+
+    graphicsBtns.forEach((btn) => {
+        if (btn.getAttribute('data-graphics') === mode) {
+            btn.classList.add('active');
+        } else {
+            btn.classList.remove('active');
+        }
+    });
+}
+
+if (graphicsToggleBtn) {
+    graphicsToggleBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const nextMode = graphicsMode === '4k' ? 'high' : (graphicsMode === 'high' ? 'retro' : '4k');
+        setGraphicsMode(nextMode, true);
+        soundEffects.flap();
+    });
+}
+graphicsBtns.forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        setGraphicsMode(btn.getAttribute('data-graphics'), true);
+        soundEffects.flap();
+    });
+});
+setGraphicsMode(graphicsMode);
+
 
 // --- State Management ---
 function showHome() {
@@ -629,9 +693,22 @@ const plane = {
         // Propeller Animation
         ctx.save();
         ctx.translate(18, 0);
-        ctx.rotate(frames * 0.5);
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
-        ctx.fillRect(-2, -11, 4, 22);
+        if (graphicsMode === '4k') {
+            // 4K Ultra Cinematic Motion Blur Propeller Disk
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.35)';
+            ctx.beginPath();
+            ctx.arc(0, 0, 13, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(0, 0, 13, frames * 0.6, frames * 0.6 + Math.PI);
+            ctx.stroke();
+        } else {
+            ctx.rotate(frames * 0.5);
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+            ctx.fillRect(-2, -11, 4, 22);
+        }
         ctx.restore();
 
         ctx.restore();
@@ -773,20 +850,72 @@ const obstacles = {
         for (let obs of this.list) {
             if (obs.destroyed) continue;
 
-            // Top Pipe
-            ctx.fillRect(obs.x, 0, this.width, obs.topHeight);
-            ctx.strokeRect(obs.x, 0, this.width, obs.topHeight);
-
-            // Bottom Pipe
             const bottomPipeY = obs.topHeight + pipeGap;
-            ctx.fillRect(obs.x, bottomPipeY, this.width, canvas.height - bottomPipeY);
-            ctx.strokeRect(obs.x, bottomPipeY, this.width, canvas.height - bottomPipeY);
+            const bottomHeight = canvas.height - bottomPipeY;
 
-            // Pipe Caps
-            ctx.fillStyle = currentTheme.pipeBorder;
-            ctx.fillRect(obs.x - 2, obs.topHeight - 20, this.width + 4, 20); // Top Cap
-            ctx.fillRect(obs.x - 2, bottomPipeY, this.width + 4, 20); // Bottom Cap
-            ctx.fillStyle = currentTheme.pipe; // Restore
+            if (graphicsMode === '4k') {
+                // 4K Ultra Photorealistic Industrial Metallic Rusted Pipes
+                const topGrad = ctx.createLinearGradient(obs.x, 0, obs.x + this.width, 0);
+                topGrad.addColorStop(0, '#555555');
+                topGrad.addColorStop(0.3, '#2e2e2e');
+                topGrad.addColorStop(0.7, '#1a1a1a');
+                topGrad.addColorStop(1, '#0d0d0d');
+                ctx.fillStyle = topGrad;
+                ctx.fillRect(obs.x, 0, this.width, obs.topHeight);
+                ctx.fillRect(obs.x, bottomPipeY, this.width, bottomHeight);
+
+                // Pipe Caps with metallic shine
+                ctx.fillStyle = '#666666';
+                ctx.fillRect(obs.x - 3, obs.topHeight - 22, this.width + 6, 22);
+                ctx.fillRect(obs.x - 3, bottomPipeY, this.width + 6, 22);
+
+                // Specular edge light reflection
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.25)';
+                ctx.fillRect(obs.x + 4, 0, 4, obs.topHeight);
+                ctx.fillRect(obs.x + 4, bottomPipeY, 4, bottomHeight);
+
+                // Industrial metallic rivets
+                ctx.fillStyle = '#aaaaaa';
+                for (let ry = 15; ry < obs.topHeight - 10; ry += 35) {
+                    ctx.beginPath();
+                    ctx.arc(obs.x + 8, ry, 2.5, 0, Math.PI * 2);
+                    ctx.arc(obs.x + this.width - 8, ry, 2.5, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                for (let ry = bottomPipeY + 25; ry < canvas.height - 10; ry += 35) {
+                    ctx.beginPath();
+                    ctx.arc(obs.x + 8, ry, 2.5, 0, Math.PI * 2);
+                    ctx.arc(obs.x + this.width - 8, ry, 2.5, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            } else if (graphicsMode === 'retro') {
+                // 8-Bit Pixel Art Mode
+                ctx.fillStyle = '#00E436';
+                ctx.strokeStyle = '#000000';
+                ctx.lineWidth = 4;
+                ctx.fillRect(obs.x, 0, this.width, obs.topHeight);
+                ctx.strokeRect(obs.x, 0, this.width, obs.topHeight);
+                ctx.fillRect(obs.x, bottomPipeY, this.width, bottomHeight);
+                ctx.strokeRect(obs.x, bottomPipeY, this.width, bottomHeight);
+
+                ctx.fillRect(obs.x - 4, obs.topHeight - 20, this.width + 8, 20);
+                ctx.strokeRect(obs.x - 4, obs.topHeight - 20, this.width + 8, 20);
+                ctx.fillRect(obs.x - 4, bottomPipeY, this.width + 8, 20);
+                ctx.strokeRect(obs.x - 4, bottomPipeY, this.width + 8, 20);
+            } else {
+                // High HD Standard Vector Mode
+                ctx.fillStyle = currentTheme.pipe;
+                ctx.strokeStyle = currentTheme.pipeBorder;
+                ctx.lineWidth = 2;
+                ctx.fillRect(obs.x, 0, this.width, obs.topHeight);
+                ctx.strokeRect(obs.x, 0, this.width, obs.topHeight);
+                ctx.fillRect(obs.x, bottomPipeY, this.width, bottomHeight);
+                ctx.strokeRect(obs.x, bottomPipeY, this.width, bottomHeight);
+
+                ctx.fillStyle = currentTheme.pipeBorder;
+                ctx.fillRect(obs.x - 2, obs.topHeight - 20, this.width + 4, 20);
+                ctx.fillRect(obs.x - 2, bottomPipeY, this.width + 4, 20);
+            }
         }
     },
 
@@ -1078,6 +1207,19 @@ const background = {
         }
     },
     draw: function () {
+        if (graphicsMode === '4k' && bgImage4K.complete && bgImage4K.naturalWidth > 0) {
+            ctx.save();
+            ctx.drawImage(bgImage4K, 0, 0, canvas.width, canvas.height);
+            // Volumetric golden atmosphere glow
+            const skyGlow = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            skyGlow.addColorStop(0, 'rgba(255, 140, 0, 0.15)');
+            skyGlow.addColorStop(1, 'rgba(15, 32, 39, 0.35)');
+            ctx.fillStyle = skyGlow;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.restore();
+            return;
+        }
+
         if (currentTheme.name === 'Night') {
             ctx.fillStyle = '#ffffff';
             for (let s of this.stars) {
@@ -1179,6 +1321,15 @@ function loop() {
             ctx.textAlign = 'left';
             const mult = streak >= 15 ? 4 : (streak >= 10 ? 3 : (streak >= 5 ? 2 : 1));
             ctx.fillText(`🔥 STREAK: ${streak} (${mult}x SCORE)`, 20, 85);
+        }
+
+        // 4K Ultra Cinematic Vignette Overlay
+        if (graphicsMode === '4k') {
+            const vig = ctx.createRadialGradient(canvas.width / 2, canvas.height / 2, Math.min(canvas.width, canvas.height) * 0.35, canvas.width / 2, canvas.height / 2, Math.max(canvas.width, canvas.height) * 0.75);
+            vig.addColorStop(0, 'rgba(0, 0, 0, 0)');
+            vig.addColorStop(1, 'rgba(0, 0, 0, 0.45)');
+            ctx.fillStyle = vig;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
         }
 
         ctx.restore();

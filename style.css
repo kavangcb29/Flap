@@ -437,3 +437,59 @@ button:active {
     letter-spacing: 0.8px;
     backdrop-filter: blur(4px);
 }
+
+/* CRT Scanline Overlay for RETRO Graphics Mode */
+.crt-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+        rgba(18, 16, 16, 0) 50%, 
+        rgba(0, 0, 0, 0.25) 50%
+    ), linear-gradient(
+        90deg,
+        rgba(255, 0, 0, 0.06),
+        rgba(0, 255, 0, 0.02),
+        rgba(0, 0, 255, 0.06)
+    );
+    background-size: 100% 4px, 6px 100%;
+    pointer-events: none;
+    z-index: 50;
+    box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.6);
+}
+
+/* Graphics Selector on Home Screen */
+.graphics-selector {
+    display: flex;
+    gap: 8px;
+    margin: 8px 0 14px 0;
+    justify-content: center;
+}
+
+.graphics-btn {
+    background: rgba(255, 255, 255, 0.1);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    color: #fff;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    backdrop-filter: blur(5px);
+}
+
+.graphics-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateY(-2px);
+}
+
+.graphics-btn.active {
+    background: linear-gradient(45deg, #FFD700, #FF8C00);
+    border-color: #FFF;
+    color: #000;
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.6);
+    transform: scale(1.05);
+}

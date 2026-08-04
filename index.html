@@ -46,6 +46,11 @@
                 <button class="skin-btn" data-skin="2" title="Cyan Jet" style="background: #00FFFF;"></button>
                 <button class="skin-btn" data-skin="3" title="Stealth Black" style="background: #1a1a1a;"></button>
             </div>
+            <div class="graphics-selector" id="graphics-selector" title="Switch Graphics Engine Mode">
+                <button class="graphics-btn active" data-graphics="4k">🌟 4K ULTRA</button>
+                <button class="graphics-btn" data-graphics="high">⚡ HIGH HD</button>
+                <button class="graphics-btn" data-graphics="retro">👾 RETRO 8-BIT</button>
+            </div>
             <div class="btn-group">
                 <button id="home-play-btn">Play Now</button>
                 <div style="display: flex; gap: 10px;">
@@ -129,6 +134,8 @@
         <button id="sound-toggle-btn" class="sound-btn" title="Toggle Sound">🔊</button>
         <button id="music-toggle-btn" class="sound-btn" title="Toggle Music" style="right: 75px;">🎵</button>
         <button id="pause-btn" class="sound-btn hidden" title="Pause (P or ESC)" style="right: 130px;">⏸️</button>
+        <button id="graphics-toggle-btn" class="sound-btn" title="Switch Graphics Quality" style="right: 185px; font-size: 0.75rem; font-weight: 800; width: 44px;">4K</button>
+        <div id="crt-overlay" class="crt-overlay hidden"></div>
 
         <!-- Achievement Toast Popup -->
         <div id="achievement-toast" class="achievement-toast hidden">
