@@ -141,6 +141,10 @@ let currentTheme = {
 
 // Difficulty Settings
 let gameSpeed = 3;
+let streak = 0;
+function getEffectiveSpeed() {
+    return plane.slowmo > 0 ? gameSpeed * 0.5 : gameSpeed;
+}
 let gravity = 0.25;
 let jumpStrength = 4.6;
 let pipeGap = 150;
@@ -535,6 +539,9 @@ function startLevel(level) {
 function winLevel() {
     gameState = 'LEVEL_COMPLETE';
     soundEffects.win();
+    createFireworks(canvas.width * 0.3, canvas.height * 0.4);
+    createFireworks(canvas.width * 0.7, canvas.height * 0.4);
+    createFireworks(canvas.width * 0.5, canvas.height * 0.3);
     unlockAchievement('first_flight');
     if (currentLevel >= 11) unlockAchievement('night_owl');
     if (currentLevel === maxLevelUnlocked) {
@@ -552,6 +559,7 @@ function winLevel() {
 
 function gameOver() {
     gameState = 'GAMEOVER';
+    streak = 0;
     soundEffects.gameOver();
     screenShake = 15;
     if (score > highScore) {
@@ -577,6 +585,7 @@ const plane = {
     angle: 0,
     shielded: false,
     invincible: 0,
+    slowmo: 0,
 
     draw: function () {
         ctx.save();
@@ -632,6 +641,9 @@ const plane = {
         if (this.invincible > 0) {
             this.invincible--;
         }
+        if (this.slowmo > 0) {
+            this.slowmo--;
+        }
         this.velocity += gravity;
         this.y += this.velocity;
 
@@ -676,7 +688,7 @@ const obstacles = {
 
         for (let i = 0; i < this.list.length; i++) {
             let obs = this.list[i];
-            obs.x -= gameSpeed;
+            obs.x -= getEffectiveSpeed();
 
             if (obs.destroyed) {
                 continue;
@@ -706,9 +718,11 @@ const obstacles = {
                         if (shieldsBroken >= 3) unlockAchievement('shield_master');
                         addFloatingText(plane.x, plane.y - 25, 'SHIELD BREAK!', '#00FFFF');
                         createParticles(obs.x + this.width / 2, hitTop ? obs.topHeight / 2 : bottomPipeY + 80, 25);
+                        createPipeDebris(obs.x + this.width / 2, hitTop ? obs.topHeight / 2 : bottomPipeY + 80, currentTheme.pipe);
                     } else if (plane.invincible > 0) {
                         obs.destroyed = true;
                         createParticles(obs.x + this.width / 2, hitTop ? obs.topHeight / 2 : bottomPipeY + 80, 15);
+                        createPipeDebris(obs.x + this.width / 2, hitTop ? obs.topHeight / 2 : bottomPipeY + 80, currentTheme.pipe);
                     }
                 } else {
                     gameOver();
@@ -717,10 +731,16 @@ const obstacles = {
 
             // Score
             if (!obs.passed && plane.x > obs.x + this.width) {
-                score++;
+                streak++;
+                const mult = streak >= 15 ? 4 : (streak >= 10 ? 3 : (streak >= 5 ? 2 : 1));
+                score += mult;
                 obstaclesPassed++;
                 soundEffects.score();
-                addFloatingText(plane.x + 20, plane.y - 15, '+1', '#2ECC71');
+                if (mult > 1) {
+                    addFloatingText(plane.x + 20, plane.y - 15, `+${mult} (STREAK x${mult}!)`, '#FF6B00');
+                } else {
+                    addFloatingText(plane.x + 20, plane.y - 15, '+1', '#2ECC71');
+                }
                 if (score >= 50) unlockAchievement('centurion');
                 if (score > highScore) {
                     highScore = score;
@@ -830,6 +850,63 @@ function handleParticles() {
     }
 }
 
+const debrisList = [];
+function createPipeDebris(x, y, color) {
+    for (let i = 0; i < 6; i++) {
+        debrisList.push({
+            x: x + (Math.random() - 0.5) * 30,
+            y: y + (Math.random() - 0.5) * 30,
+            vx: (Math.random() - 0.5) * 6,
+            vy: -4 - Math.random() * 4,
+            rv: (Math.random() - 0.5) * 0.2,
+            angle: Math.random() * Math.PI,
+            width: 12 + Math.random() * 14,
+            height: 18 + Math.random() * 22,
+            life: 60,
+            color: color || '#A0A0A0'
+        });
+    }
+}
+function handleDebris() {
+    for (let i = 0; i < debrisList.length; i++) {
+        let d = debrisList[i];
+        d.x += d.vx;
+        d.y += d.vy;
+        d.vy += 0.35;
+        d.angle += d.rv;
+        d.life--;
+        ctx.save();
+        ctx.translate(d.x, d.y);
+        ctx.rotate(d.angle);
+        ctx.fillStyle = d.color;
+        ctx.strokeStyle = '#333';
+        ctx.lineWidth = 1.5;
+        ctx.globalAlpha = Math.max(0, d.life / 60);
+        ctx.fillRect(-d.width / 2, -d.height / 2, d.width, d.height);
+        ctx.strokeRect(-d.width / 2, -d.height / 2, d.width, d.height);
+        ctx.restore();
+        if (d.life <= 0) {
+            debrisList.splice(i, 1);
+            i--;
+        }
+    }
+}
+
+function createFireworks(x, y) {
+    for (let i = 0; i < 35; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = 2 + Math.random() * 6;
+        particlesList.push({
+            x: x,
+            y: y,
+            vx: Math.cos(angle) * speed,
+            vy: Math.sin(angle) * speed,
+            life: 40 + Math.random() * 20,
+            color: `hsl(${Math.random() * 360}, 100%, 65%)`
+        });
+    }
+}
+
 // --- Screen Shake & Floating Text ---
 let screenShake = 0;
 const floatingTexts = [];
@@ -859,13 +936,14 @@ const collectibles = {
     list: [],
     update: function () {
         if (frames % 120 === 60 && Math.random() < 0.65) {
-            const type = Math.random() < 0.75 ? 'coin' : 'shield';
+            const rand = Math.random();
+            const type = rand < 0.60 ? 'coin' : (rand < 0.85 ? 'shield' : 'slowmo');
             const y = Math.random() * (canvas.height - 200) + 100;
             this.list.push({ x: canvas.width, y: y, type: type, collected: false });
         }
         for (let i = 0; i < this.list.length; i++) {
             let item = this.list[i];
-            item.x -= gameSpeed;
+            item.x -= getEffectiveSpeed();
             if (!item.collected) {
                 const dx = plane.x - item.x;
                 const dy = plane.y - item.y;
@@ -885,6 +963,11 @@ const collectibles = {
                         soundEffects.powerup();
                         addFloatingText(item.x, item.y - 15, 'SHIELD EQUIPPED!', '#00FFFF');
                         createParticles(item.x, item.y, 10);
+                    } else if (item.type === 'slowmo') {
+                        plane.slowmo = 300; // 5 seconds
+                        soundEffects.powerup();
+                        addFloatingText(item.x, item.y - 15, 'TIME WARP! x0.5 SPEED', '#9d4edd');
+                        createParticles(item.x, item.y, 12);
                     }
                     if (score > highScore) {
                         highScore = score;
@@ -916,7 +999,7 @@ const collectibles = {
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
                 ctx.fillText('$', 0, 0);
-            } else {
+            } else if (item.type === 'shield') {
                 ctx.fillStyle = 'rgba(0, 255, 255, 0.6)';
                 ctx.strokeStyle = '#00FFFF';
                 ctx.lineWidth = 2;
@@ -924,6 +1007,19 @@ const collectibles = {
                 ctx.arc(0, 0, 14, 0, Math.PI * 2);
                 ctx.fill();
                 ctx.stroke();
+            } else if (item.type === 'slowmo') {
+                ctx.fillStyle = 'rgba(157, 78, 221, 0.7)';
+                ctx.strokeStyle = '#c77dff';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(0, 0, 14, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+                ctx.fillStyle = '#fff';
+                ctx.font = '14px Outfit, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('⏱️', 0, 0);
             }
             ctx.restore();
         }
@@ -1060,10 +1156,30 @@ function loop() {
         collectibles.draw();
 
         handleParticles();
+        handleDebris();
         handleFloatingTexts();
 
         plane.update();
         plane.draw();
+
+        // HUD: Slow-Mo Time Warp Banner
+        if (plane.slowmo > 0) {
+            ctx.fillStyle = 'rgba(157, 78, 221, 0.15)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#9d4edd';
+            ctx.font = '800 18px Outfit, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(`⏱️ SLOW-MO TIME WARP (${Math.ceil(plane.slowmo / 60)}s)`, canvas.width / 2, 85);
+        }
+
+        // HUD: Combo Streak Indicator
+        if (streak >= 3) {
+            ctx.fillStyle = '#FF6B00';
+            ctx.font = '800 16px Outfit, sans-serif';
+            ctx.textAlign = 'left';
+            const mult = streak >= 15 ? 4 : (streak >= 10 ? 3 : (streak >= 5 ? 2 : 1));
+            ctx.fillText(`🔥 STREAK: ${streak} (${mult}x SCORE)`, 20, 85);
+        }
 
         ctx.restore();
 
@@ -1074,6 +1190,8 @@ function loop() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         background.update();
         background.draw();
+        handleParticles();
+        handleDebris();
         if (gameState !== 'HOME') {
             plane.draw();
         }
