@@ -653,11 +653,19 @@ const plane = {
 
     draw: function () {
         ctx.save();
+        // High-Quality Animation: Smooth Physics Banking & Idle Bobbing
+        let targetAngle = (this.velocity * 0.12);
+        if (gameState !== 'PLAYING') {
+            targetAngle = 0;
+            this.y += Math.sin(frames * 0.05) * 0.5; // Idle floating bob
+        }
+        targetAngle = Math.min(Math.PI / 3.5, Math.max(-Math.PI / 3.5, targetAngle));
+        this.angle += (targetAngle - this.angle) * 0.15; // Smooth spring interpolation
+        
         ctx.translate(this.x, this.y);
         if (this.invincible > 0 && Math.floor(frames / 4) % 2 === 0) {
             ctx.globalAlpha = 0.4;
         }
-        this.angle = Math.min(Math.PI / 4, Math.max(-Math.PI / 4, (this.velocity * 0.1)));
         ctx.rotate(this.angle);
 
         if (this.shielded) {
@@ -938,14 +946,17 @@ function createParticles(x, y, count) {
     }
 }
 function createJetExhaust(x, y) {
+    const is4K = graphicsMode === '4k';
     // Flame Particle
     particlesList.push({
         x: x,
         y: y + (Math.random() - 0.5) * 4,
         vx: -3 - Math.random() * 2,
-        vy: (Math.random() - 0.5) * 1,
-        life: 12 + Math.random() * 6,
-        color: Math.random() < 0.5 ? '#FF4500' : '#FFD700'
+        vy: (Math.random() - 0.5) * (is4K ? 0.5 : 1),
+        life: is4K ? 16 + Math.random() * 8 : 12 + Math.random() * 6,
+        color: is4K ? (Math.random() < 0.6 ? '#FFA500' : '#FF4500') : (Math.random() < 0.5 ? '#FF4500' : '#FFD700'),
+        size: is4K ? 4 + Math.random() * 3 : 3,
+        type: 'fire'
     });
     // Smoke Contrail
     if (frames % 2 === 0) {
@@ -954,9 +965,11 @@ function createJetExhaust(x, y) {
             y: y + (Math.random() - 0.5) * 6,
             vx: -1.5 - Math.random(),
             vy: (Math.random() - 0.5) * 0.5,
-            life: 25 + Math.random() * 10,
-            color: 'rgba(255, 255, 255, 0.4)',
-            sizeDelta: 0.15
+            life: is4K ? 40 + Math.random() * 20 : 25 + Math.random() * 10,
+            color: is4K ? 'rgba(200, 200, 200, 0.25)' : 'rgba(255, 255, 255, 0.4)',
+            sizeDelta: is4K ? 0.25 : 0.15,
+            size: is4K ? 5 : 3,
+            type: 'smoke'
         });
     }
 }
@@ -966,12 +979,29 @@ function handleParticles() {
         p.x += p.vx;
         p.y += p.vy;
         p.life--;
+        
+        ctx.save();
+        if (graphicsMode === '4k' && p.type === 'fire') {
+            ctx.globalCompositeOperation = 'lighter'; // Additive blending for volumetric fire glow
+        }
+        
         ctx.fillStyle = p.color;
         ctx.globalAlpha = Math.max(0, p.life / 30);
         ctx.beginPath();
-        ctx.arc(p.x, p.y, p.sizeDelta ? (3 + (30 - p.life) * p.sizeDelta) : 3, 0, Math.PI * 2);
+        const currentSize = p.sizeDelta ? ((p.size || 3) + (30 - p.life) * p.sizeDelta) : (p.size || 3);
+        ctx.arc(p.x, p.y, Math.max(0.1, currentSize), 0, Math.PI * 2);
+        
+        if (graphicsMode === '4k' && p.type === 'fire') {
+            const grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, currentSize);
+            grad.addColorStop(0, '#FFFFFF');
+            grad.addColorStop(0.3, p.color);
+            grad.addColorStop(1, 'transparent');
+            ctx.fillStyle = grad;
+        }
+        
         ctx.fill();
-        ctx.globalAlpha = 1;
+        ctx.restore();
+        
         if (p.life <= 0) {
             particlesList.splice(i, 1);
             i--;
@@ -1209,7 +1239,11 @@ const background = {
     draw: function () {
         if (graphicsMode === '4k' && bgImage4K.complete && bgImage4K.naturalWidth > 0) {
             ctx.save();
-            ctx.drawImage(bgImage4K, 0, 0, canvas.width, canvas.height);
+            // High-Quality Animation: Slow Cinematic Parallax Pan
+            const panOffset = (frames * 0.15) % canvas.width;
+            ctx.drawImage(bgImage4K, -panOffset, 0, canvas.width + 10, canvas.height);
+            ctx.drawImage(bgImage4K, canvas.width - panOffset, 0, canvas.width + 10, canvas.height);
+            
             // Volumetric golden atmosphere glow
             const skyGlow = ctx.createLinearGradient(0, 0, 0, canvas.height);
             skyGlow.addColorStop(0, 'rgba(255, 140, 0, 0.15)');
@@ -1281,10 +1315,11 @@ function loop() {
 
         ctx.save();
         if (screenShake > 0) {
-            const dx = (Math.random() - 0.5) * screenShake * 2;
-            const dy = (Math.random() - 0.5) * screenShake * 2;
+            // High-Quality Animation: Damped Harmonic Oscillator Shake
+            const dx = Math.sin(frames * 0.8) * screenShake;
+            const dy = Math.cos(frames * 0.9) * screenShake;
             ctx.translate(dx, dy);
-            screenShake *= 0.88;
+            screenShake *= 0.92;
             if (screenShake < 0.5) screenShake = 0;
         }
 
