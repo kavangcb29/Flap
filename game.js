@@ -1,3 +1,5 @@
+let gameWidth = window.innerWidth;
+let gameHeight = window.innerHeight;
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
@@ -196,8 +198,8 @@ const soundToggleBtn = document.getElementById('sound-toggle-btn');
 
 // --- Resize ---
 function resizeCanvas() {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
+    gameWidth = window.innerWidth;
+    gameHeight = window.innerHeight;
 }
 window.addEventListener('resize', resizeCanvas);
 resizeCanvas();
@@ -595,7 +597,7 @@ function startLevel(level) {
 
     scoreDisplay.innerText = `${obstaclesPassed}/${obstaclesToWin}`;
 
-    plane.y = canvas.height / 2;
+    plane.y = gameHeight / 2;
     plane.velocity = 0;
     plane.angle = 0;
 }
@@ -603,9 +605,9 @@ function startLevel(level) {
 function winLevel() {
     gameState = 'LEVEL_COMPLETE';
     soundEffects.win();
-    createFireworks(canvas.width * 0.3, canvas.height * 0.4);
-    createFireworks(canvas.width * 0.7, canvas.height * 0.4);
-    createFireworks(canvas.width * 0.5, canvas.height * 0.3);
+    createFireworks(gameWidth * 0.3, gameHeight * 0.4);
+    createFireworks(gameWidth * 0.7, gameHeight * 0.4);
+    createFireworks(gameWidth * 0.5, gameHeight * 0.3);
     unlockAchievement('first_flight');
     if (currentLevel >= 11) unlockAchievement('night_owl');
     if (currentLevel === maxLevelUnlocked) {
@@ -737,8 +739,8 @@ const plane = {
             createJetExhaust(this.x - 18, this.y);
         }
 
-        if (this.y + this.height / 2 > canvas.height) {
-            this.y = canvas.height - this.height / 2;
+        if (this.y + this.height / 2 > gameHeight) {
+            this.y = gameHeight - this.height / 2;
             gameOver();
         }
         if (this.y - this.height / 2 < 0) {
@@ -761,11 +763,11 @@ const obstacles = {
     update: function () {
         if (frames % 120 === 0) { // Slower spawn rate
             const minHeight = 50;
-            const maxHeight = canvas.height - pipeGap - minHeight;
+            const maxHeight = gameHeight - pipeGap - minHeight;
             const topHeight = Math.floor(Math.random() * (maxHeight - minHeight + 1) + minHeight);
 
             this.list.push({
-                x: canvas.width,
+                x: gameWidth,
                 topHeight: topHeight,
                 passed: false
             });
@@ -859,7 +861,7 @@ const obstacles = {
             if (obs.destroyed) continue;
 
             const bottomPipeY = obs.topHeight + pipeGap;
-            const bottomHeight = canvas.height - bottomPipeY;
+            const bottomHeight = gameHeight - bottomPipeY;
 
             if (graphicsMode === '4k') {
                 // 4K Ultra Photorealistic Industrial Metallic Rusted Pipes
@@ -890,7 +892,7 @@ const obstacles = {
                     ctx.arc(obs.x + this.width - 8, ry, 2.5, 0, Math.PI * 2);
                     ctx.fill();
                 }
-                for (let ry = bottomPipeY + 25; ry < canvas.height - 10; ry += 35) {
+                for (let ry = bottomPipeY + 25; ry < gameHeight - 10; ry += 35) {
                     ctx.beginPath();
                     ctx.arc(obs.x + 8, ry, 2.5, 0, Math.PI * 2);
                     ctx.arc(obs.x + this.width - 8, ry, 2.5, 0, Math.PI * 2);
@@ -1097,8 +1099,8 @@ const collectibles = {
         if (frames % 120 === 60 && Math.random() < 0.65) {
             const rand = Math.random();
             const type = rand < 0.60 ? 'coin' : (rand < 0.85 ? 'shield' : 'slowmo');
-            const y = Math.random() * (canvas.height - 200) + 100;
-            this.list.push({ x: canvas.width, y: y, type: type, collected: false });
+            const y = Math.random() * (gameHeight - 200) + 100;
+            this.list.push({ x: gameWidth, y: y, type: type, collected: false });
         }
         for (let i = 0; i < this.list.length; i++) {
             let item = this.list[i];
@@ -1196,8 +1198,8 @@ const background = {
     init: function () {
         for (let i = 0; i < 5; i++) {
             this.clouds.push({
-                x: Math.random() * canvas.width,
-                y: Math.random() * (canvas.height / 2),
+                x: Math.random() * gameWidth,
+                y: Math.random() * (gameHeight / 2),
                 speed: 0.1 + Math.random() * 0.2,
                 size: 30 + Math.random() * 50
             });
@@ -1223,15 +1225,15 @@ const background = {
     update: function () {
         for (let c of this.clouds) {
             c.x -= c.speed;
-            if (c.x + c.size * 2 < 0) c.x = canvas.width + c.size;
+            if (c.x + c.size * 2 < 0) c.x = gameWidth + c.size;
         }
         if (currentTheme.name === 'Snow') {
             for (let s of this.snowflakes) {
                 s.y += s.vy;
                 s.x += s.vx;
-                if (s.y > canvas.height) {
+                if (s.y > gameHeight) {
                     s.y = -10;
-                    s.x = Math.random() * canvas.width;
+                    s.x = Math.random() * gameWidth;
                 }
             }
         }
@@ -1240,16 +1242,16 @@ const background = {
         if (graphicsMode === '4k' && bgImage4K.complete && bgImage4K.naturalWidth > 0) {
             ctx.save();
             // High-Quality Animation: Slow Cinematic Parallax Pan
-            const panOffset = (frames * 0.15) % canvas.width;
-            ctx.drawImage(bgImage4K, -panOffset, 0, canvas.width + 10, canvas.height);
-            ctx.drawImage(bgImage4K, canvas.width - panOffset, 0, canvas.width + 10, canvas.height);
+            const panOffset = (frames * 0.15) % gameWidth;
+            ctx.drawImage(bgImage4K, -panOffset, 0, gameWidth + 10, gameHeight);
+            ctx.drawImage(bgImage4K, gameWidth - panOffset, 0, gameWidth + 10, gameHeight);
             
             // Volumetric golden atmosphere glow
-            const skyGlow = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            const skyGlow = ctx.createLinearGradient(0, 0, 0, gameHeight);
             skyGlow.addColorStop(0, 'rgba(255, 140, 0, 0.15)');
             skyGlow.addColorStop(1, 'rgba(15, 32, 39, 0.35)');
             ctx.fillStyle = skyGlow;
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillRect(0, 0, gameWidth, gameHeight);
             ctx.restore();
             this.drawTelemetry();
             return;
@@ -1269,14 +1271,14 @@ const background = {
         // Draw Mountains
         ctx.fillStyle = currentTheme.mountains;
         ctx.beginPath();
-        ctx.moveTo(0, canvas.height);
-        ctx.lineTo(200, canvas.height - 150);
-        ctx.lineTo(400, canvas.height - 50);
-        ctx.lineTo(600, canvas.height - 200);
-        ctx.lineTo(900, canvas.height - 100);
-        ctx.lineTo(canvas.width, canvas.height - 250);
-        ctx.lineTo(canvas.width, canvas.height);
-        ctx.lineTo(0, canvas.height);
+        ctx.moveTo(0, gameHeight);
+        ctx.lineTo(200, gameHeight - 150);
+        ctx.lineTo(400, gameHeight - 50);
+        ctx.lineTo(600, gameHeight - 200);
+        ctx.lineTo(900, gameHeight - 100);
+        ctx.lineTo(gameWidth, gameHeight - 250);
+        ctx.lineTo(gameWidth, gameHeight);
+        ctx.lineTo(0, gameHeight);
         ctx.fill();
 
         // Draw Clouds
@@ -1308,10 +1310,10 @@ const background = {
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             
-            const centerY = canvas.height / 2;
-            const centerX = canvas.width / 2;
+            const centerY = gameHeight / 2;
+            const centerX = gameWidth / 2;
             
-            ctx.fillText(`ALT: ${Math.floor(canvas.height - plane.y)}M`, centerX, centerY - 60);
+            ctx.fillText(`ALT: ${Math.floor(gameHeight - plane.y)}M`, centerX, centerY - 60);
             ctx.fillText(`SPD: ${Math.floor(getEffectiveSpeed() * 100)} KPH`, centerX, centerY);
             ctx.fillText(`DST: ${Math.floor(frames / 5)}M`, centerX, centerY + 60);
             
@@ -1328,7 +1330,7 @@ background.init();
 function resetGameObjects() {
     obstacles.reset();
     collectibles.reset();
-    plane.y = canvas.height / 2;
+    plane.y = gameHeight / 2;
     plane.velocity = 0;
     plane.shielded = false;
     plane.invincible = 0;
@@ -1336,7 +1338,7 @@ function resetGameObjects() {
 
 function loop() {
     if (gameState === 'PLAYING') {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.clearRect(0, 0, gameWidth, gameHeight);
 
         ctx.save();
         if (screenShake > 0) {
@@ -1367,11 +1369,11 @@ function loop() {
         // HUD: Slow-Mo Time Warp Banner
         if (plane.slowmo > 0) {
             ctx.fillStyle = 'rgba(157, 78, 221, 0.15)';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillRect(0, 0, gameWidth, gameHeight);
             ctx.fillStyle = '#9d4edd';
             ctx.font = '800 18px Outfit, sans-serif';
             ctx.textAlign = 'center';
-            ctx.fillText(`⏱️ SLOW-MO TIME WARP (${Math.ceil(plane.slowmo / 60)}s)`, canvas.width / 2, 85);
+            ctx.fillText(`⏱️ SLOW-MO TIME WARP (${Math.ceil(plane.slowmo / 60)}s)`, gameWidth / 2, 85);
         }
 
         // HUD: Combo Streak Indicator
@@ -1385,11 +1387,11 @@ function loop() {
 
         // 4K Ultra Cinematic Vignette Overlay
         if (graphicsMode === '4k') {
-            const vig = ctx.createRadialGradient(canvas.width / 2, canvas.height / 2, Math.min(canvas.width, canvas.height) * 0.35, canvas.width / 2, canvas.height / 2, Math.max(canvas.width, canvas.height) * 0.75);
+            const vig = ctx.createRadialGradient(gameWidth / 2, gameHeight / 2, Math.min(gameWidth, gameHeight) * 0.35, gameWidth / 2, gameHeight / 2, Math.max(gameWidth, gameHeight) * 0.75);
             vig.addColorStop(0, 'rgba(0, 0, 0, 0)');
             vig.addColorStop(1, 'rgba(0, 0, 0, 0.45)');
             ctx.fillStyle = vig;
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillRect(0, 0, gameWidth, gameHeight);
         }
 
         ctx.restore();
@@ -1398,7 +1400,7 @@ function loop() {
         requestAnimationFrame(loop);
     } else {
         // Draw background even in menus for effect
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.clearRect(0, 0, gameWidth, gameHeight);
         background.update();
         background.draw();
         handleParticles();
