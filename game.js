@@ -1251,6 +1251,7 @@ const background = {
             ctx.fillStyle = skyGlow;
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             ctx.restore();
+            this.drawTelemetry();
             return;
         }
 
@@ -1295,6 +1296,30 @@ const background = {
                 ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
                 ctx.fill();
             }
+        }
+        this.drawTelemetry();
+    },
+    
+    drawTelemetry: function () {
+        if (gameState === 'PLAYING') {
+            ctx.save();
+            ctx.fillStyle = graphicsMode === '4k' ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.1)';
+            ctx.font = '800 48px Outfit, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            
+            const centerY = canvas.height / 2;
+            const centerX = canvas.width / 2;
+            
+            ctx.fillText(`ALT: ${Math.floor(canvas.height - plane.y)}M`, centerX, centerY - 60);
+            ctx.fillText(`SPD: ${Math.floor(getEffectiveSpeed() * 100)} KPH`, centerX, centerY);
+            ctx.fillText(`DST: ${Math.floor(frames / 5)}M`, centerX, centerY + 60);
+            
+            ctx.font = '700 24px Outfit, sans-serif';
+            const engTemp = 70 + (streak * 5) + Math.floor(plane.velocity);
+            ctx.fillText(`ENG TEMP: ${engTemp}°C`, centerX, centerY + 110);
+            
+            ctx.restore();
         }
     }
 };
