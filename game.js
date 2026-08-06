@@ -228,9 +228,23 @@ window.addEventListener('keydown', (e) => {
         togglePause();
     }
 });
-window.addEventListener('mousedown', () => {
+
+// UI Glitch Fix: Only flap if the user did NOT tap a button or a menu screen!
+let lastFlapTime = 0;
+function handlePointerDown(e) {
+    // Ignore clicks on buttons or active UI overlay screens
+    if (e.target.tagName === 'BUTTON' || e.target.closest('.ui-screen:not(.hidden)')) {
+        return;
+    }
+    const now = performance.now();
+    if (now - lastFlapTime < 50) return; // Prevent double-fire from touchstart+mousedown on mobile
+    lastFlapTime = now;
+    
     handleInput();
-});
+}
+
+window.addEventListener('mousedown', handlePointerDown);
+window.addEventListener('touchstart', handlePointerDown, { passive: true });
 
 // --- Button Listeners ---
 homePlayBtn.addEventListener('click', (e) => {
