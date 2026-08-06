@@ -200,6 +200,24 @@ const soundToggleBtn = document.getElementById('sound-toggle-btn');
 function resizeCanvas() {
     gameWidth = window.innerWidth;
     gameHeight = window.innerHeight;
+    
+    let dpr = 1;
+    if (typeof graphicsMode !== 'undefined') {
+        dpr = (graphicsMode === '4k') ? Math.max(2, window.devicePixelRatio || 2) : (graphicsMode === 'high' ? (window.devicePixelRatio || 1) : 1);
+    }
+    
+    canvas.width = gameWidth * dpr;
+    canvas.height = gameHeight * dpr;
+    canvas.style.width = gameWidth + 'px';
+    canvas.style.height = gameHeight + 'px';
+    
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.scale(dpr, dpr);
+    
+    ctx.imageSmoothingEnabled = (typeof graphicsMode !== 'undefined' && graphicsMode !== 'retro');
+    if (typeof graphicsMode !== 'undefined' && graphicsMode === '4k') {
+        ctx.imageSmoothingQuality = 'high';
+    }
 }
 window.addEventListener('resize', resizeCanvas);
 resizeCanvas();
@@ -413,6 +431,8 @@ function setGraphicsMode(mode, showToastMsg = false) {
             btn.classList.remove('active');
         }
     });
+    
+    if (typeof resizeCanvas === 'function') resizeCanvas();
 }
 
 if (graphicsToggleBtn) {
