@@ -57,6 +57,7 @@
                     <button id="levels-btn">Select Level</button>
                     <button id="trophies-btn" class="secondary-btn">🏆 Trophies</button>
                     <button id="leaderboard-btn" class="secondary-btn">🌍 Global</button>
+                    <button id="settings-btn" class="secondary-btn">⚙️ Settings</button>
                 </div>
             </div>
         </div>
@@ -119,6 +120,54 @@
             <div class="btn-group">
                 <button id="next-level-btn">Next Level</button>
                 <button id="home-btn-complete" class="secondary-btn">Home</button>
+            </div>
+        </div>
+
+        <!-- Settings Screen -->
+        <div id="settings-screen" class="ui-overlay hidden">
+            <h2>Game Settings</h2>
+            <div class="settings-list" style="max-height: 300px; overflow-y: auto; padding-right: 10px; width: 100%; text-align: left;">
+                
+                <div class="setting-item">
+                    <label>UI Theme:</label>
+                    <select id="ui-theme-select">
+                        <option value="dark">Dark Theme</option>
+                        <option value="light">Light Theme</option>
+                    </select>
+                </div>
+                
+                <div class="setting-item">
+                    <label>Spacebar Action:</label>
+                    <select id="spacebar-action-select">
+                        <option value="flap">Flap</option>
+                        <option value="shoot">Shoot</option>
+                    </select>
+                </div>
+
+                <div class="setting-item">
+                    <label>Game Speed (<span id="speed-val">3</span>)</label>
+                    <input type="range" id="game-speed-slider" min="1" max="6" step="0.5" value="3">
+                </div>
+
+                <div class="setting-item">
+                    <label>Gravity (<span id="gravity-val">0.25</span>)</label>
+                    <input type="range" id="gravity-slider" min="0.1" max="0.6" step="0.05" value="0.25">
+                </div>
+
+                <div class="setting-item">
+                    <label>Jump Force (<span id="jump-val">4.6</span>)</label>
+                    <input type="range" id="jump-slider" min="2" max="8" step="0.2" value="4.6">
+                </div>
+                
+                <div class="setting-item">
+                    <label>Pipe Gap (<span id="gap-val">150</span>)</label>
+                    <input type="range" id="gap-slider" min="100" max="250" step="10" value="150">
+                </div>
+                
+            </div>
+            <div class="btn-group">
+                <button id="close-settings-btn">Back</button>
+                <button id="reset-settings-btn" class="secondary-btn">Reset Defaults</button>
             </div>
         </div>
 

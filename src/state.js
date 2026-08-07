@@ -15,11 +15,18 @@ export const state = {
     soundEnabled: true,
     musicEnabled: false,
     selectedSkin: parseInt(localStorage.getItem('flappy_skin') || '0', 10),
-    gameSpeed: 3,
+    
+    // Custom Settings
+    uiTheme: localStorage.getItem('flappy_ui_theme') || 'dark',
+    spacebarAction: localStorage.getItem('flappy_space_action') || 'flap',
+    
+    // Physics & Difficulty Modifiers
+    gameSpeed: parseFloat(localStorage.getItem('flappy_game_speed') || '3'),
     streak: 0,
-    gravity: 0.25,
-    jumpStrength: 4.6,
-    pipeGap: 150,
+    gravity: parseFloat(localStorage.getItem('flappy_gravity') || '0.25'),
+    jumpStrength: parseFloat(localStorage.getItem('flappy_jump') || '4.6'),
+    pipeGap: parseInt(localStorage.getItem('flappy_pipe_gap') || '150', 10),
+    
     screenShake: 0
 };
 

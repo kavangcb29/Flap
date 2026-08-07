@@ -127,6 +127,93 @@ async function fetchLeaderboard() {
     });
 }
 
+// Settings Logic
+const settingsBtn = document.getElementById('settings-btn');
+const settingsScreen = document.getElementById('settings-screen');
+const closeSettingsBtn = document.getElementById('close-settings-btn');
+const resetSettingsBtn = document.getElementById('reset-settings-btn');
+
+const uiThemeSelect = document.getElementById('ui-theme-select');
+const spaceActionSelect = document.getElementById('spacebar-action-select');
+const gameSpeedSlider = document.getElementById('game-speed-slider');
+const gravitySlider = document.getElementById('gravity-slider');
+const jumpSlider = document.getElementById('jump-slider');
+const gapSlider = document.getElementById('gap-slider');
+
+function applySettingsUI() {
+    uiThemeSelect.value = state.uiTheme;
+    spaceActionSelect.value = state.spacebarAction;
+    gameSpeedSlider.value = state.gameSpeed;
+    gravitySlider.value = state.gravity;
+    jumpSlider.value = state.jumpStrength;
+    gapSlider.value = state.pipeGap;
+    
+    document.getElementById('speed-val').innerText = state.gameSpeed;
+    document.getElementById('gravity-val').innerText = state.gravity;
+    document.getElementById('jump-val').innerText = state.jumpStrength;
+    document.getElementById('gap-val').innerText = state.pipeGap;
+    
+    if (state.uiTheme === 'light') document.body.classList.add('light-theme');
+    else document.body.classList.remove('light-theme');
+}
+
+uiThemeSelect.addEventListener('change', (e) => {
+    state.uiTheme = e.target.value;
+    localStorage.setItem('flappy_ui_theme', state.uiTheme);
+    applySettingsUI();
+});
+
+spaceActionSelect.addEventListener('change', (e) => {
+    state.spacebarAction = e.target.value;
+    localStorage.setItem('flappy_space_action', state.spacebarAction);
+});
+
+gameSpeedSlider.addEventListener('input', (e) => {
+    state.gameSpeed = parseFloat(e.target.value);
+    document.getElementById('speed-val').innerText = state.gameSpeed;
+    localStorage.setItem('flappy_game_speed', state.gameSpeed);
+});
+
+gravitySlider.addEventListener('input', (e) => {
+    state.gravity = parseFloat(e.target.value);
+    document.getElementById('gravity-val').innerText = state.gravity;
+    localStorage.setItem('flappy_gravity', state.gravity);
+});
+
+jumpSlider.addEventListener('input', (e) => {
+    state.jumpStrength = parseFloat(e.target.value);
+    document.getElementById('jump-val').innerText = state.jumpStrength;
+    localStorage.setItem('flappy_jump', state.jumpStrength);
+});
+
+gapSlider.addEventListener('input', (e) => {
+    state.pipeGap = parseInt(e.target.value, 10);
+    document.getElementById('gap-val').innerText = state.pipeGap;
+    localStorage.setItem('flappy_pipe_gap', state.pipeGap);
+});
+
+resetSettingsBtn.addEventListener('click', () => {
+    localStorage.removeItem('flappy_ui_theme');
+    localStorage.removeItem('flappy_space_action');
+    localStorage.removeItem('flappy_game_speed');
+    localStorage.removeItem('flappy_gravity');
+    localStorage.removeItem('flappy_jump');
+    localStorage.removeItem('flappy_pipe_gap');
+    
+    state.uiTheme = 'dark';
+    state.spacebarAction = 'flap';
+    state.gameSpeed = 3;
+    state.gravity = 0.25;
+    state.jumpStrength = 4.6;
+    state.pipeGap = 150;
+    
+    applySettingsUI();
+    soundEffects.score();
+});
+
+// Initialize Settings UI on load
+applySettingsUI();
+
 export function updateScoreUI() {
     scoreDisplay.innerText = `${state.obstaclesPassed}/${state.obstaclesToWin}`;
     if (progressBar) {
@@ -183,7 +270,18 @@ export function initUIListeners() {
         if (e.code === 'ArrowUp') {
             e.preventDefault();
             handleInput();
-        } else if (e.code === 'Space' || e.key === 'Shift' || e.key === 'Control') {
+        } else if (e.code === 'Space') {
+            e.preventDefault();
+            if (state.gameState === 'PLAYING') {
+                if (state.spacebarAction === 'shoot') {
+                    plane.shoot();
+                } else {
+                    handleInput();
+                }
+            } else {
+                handleInput(); // Start game on space
+            }
+        } else if (e.key === 'Shift' || e.key === 'Control') {
             e.preventDefault();
             if (state.gameState === 'PLAYING') {
                 plane.shoot();
@@ -240,6 +338,23 @@ export function initUIListeners() {
         closeLeaderboardBtn.addEventListener('click', () => {
             soundEffects.flap();
             leaderboardScreen.classList.add('hidden');
+            homeScreen.classList.remove('hidden');
+        });
+    }
+    
+    if (settingsBtn) {
+        settingsBtn.addEventListener('click', () => {
+            soundEffects.score();
+            homeScreen.classList.add('hidden');
+            settingsScreen.classList.remove('hidden');
+            applySettingsUI();
+        });
+    }
+
+    if (closeSettingsBtn) {
+        closeSettingsBtn.addEventListener('click', () => {
+            soundEffects.flap();
+            settingsScreen.classList.add('hidden');
             homeScreen.classList.remove('hidden');
         });
     }

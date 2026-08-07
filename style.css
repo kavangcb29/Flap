@@ -9,6 +9,17 @@
     --ad-bg: rgba(255, 255, 255, 0.05);
 }
 
+body.light-theme {
+    --primary-color: #0077b6;
+    --secondary-color: #d00000;
+    --accent-color: #f4a261;
+    --bg-gradient: linear-gradient(180deg, #e0e5ec 0%, #f8f9fa 50%, #e0e5ec 100%);
+    --glass-bg: rgba(255, 255, 255, 0.85);
+    --glass-border: rgba(0, 119, 182, 0.4);
+    --text-color: #1d3557;
+    --ad-bg: rgba(0, 0, 0, 0.05);
+}
+
 * {
     margin: 0;
     padding: 0;
@@ -410,6 +421,39 @@ button:active {
     flex-direction: column;
     gap: 10px;
     padding-right: 10px;
+}
+
+/* Settings Menu */
+.setting-item {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 15px;
+    background: rgba(0, 0, 0, 0.2);
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.setting-item label {
+    font-size: 1rem;
+    color: var(--text-main);
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+.setting-item select, .setting-item input[type=range] {
+    width: 100%;
+    padding: 8px;
+    background: rgba(0,0,0,0.4);
+    color: var(--text-main);
+    border: 1px solid var(--accent-color);
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 1rem;
+}
+
+.setting-item input[type=range] {
+    accent-color: var(--accent-color);
 }
 
 .leaderboard-item {
