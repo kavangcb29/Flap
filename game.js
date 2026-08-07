@@ -1437,11 +1437,12 @@ function loop() {
         ctx.clearRect(0, 0, gameWidth, gameHeight);
         background.update();
         background.draw();
+        
+        // Always draw the plane so the user can see it on the home screen!
+        plane.draw();
+        
         handleParticles();
         handleDebris();
-        if (gameState !== 'HOME') {
-            plane.draw();
-        }
         requestAnimationFrame(loop);
     }
 }
