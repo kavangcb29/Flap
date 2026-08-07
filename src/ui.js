@@ -81,6 +81,52 @@ const progressBarContainer = document.getElementById('progress-bar-container');
 const progressBar = document.getElementById('progress-bar');
 const soundToggleBtn = document.getElementById('sound-toggle-btn');
 
+// Leaderboard UI Elements
+const leaderboardBtn = document.getElementById('leaderboard-btn');
+const leaderboardScreen = document.getElementById('leaderboard-screen');
+const closeLeaderboardBtn = document.getElementById('close-leaderboard-btn');
+const leaderboardList = document.getElementById('leaderboard-list');
+
+// Mock Global Leaderboard Data (Simulates API)
+let mockGlobalLeaderboard = [
+    { name: "Maverick", score: 9999 },
+    { name: "SkyKing", score: 8500 },
+    { name: "NeonRider", score: 7200 },
+    { name: "CloudSurfer", score: 5400 },
+    { name: "NoobPilot", score: 1500 }
+];
+
+async function fetchLeaderboard() {
+    leaderboardList.innerHTML = '<div class="leaderboard-loading">Loading scores...</div>';
+    
+    // Simulate network delay
+    await new Promise(resolve => setTimeout(resolve, 800));
+    
+    // In a real app, this would be a fetch() call to a backend
+    const localHigh = state.highScore;
+    let combined = [...mockGlobalLeaderboard];
+    
+    if (localHigh > 0) {
+        // Add player to the list if they have a score
+        combined.push({ name: "YOU", score: localHigh, isPlayer: true });
+    }
+    
+    combined.sort((a, b) => b.score - a.score);
+    
+    leaderboardList.innerHTML = '';
+    combined.slice(0, 10).forEach((entry, index) => {
+        const item = document.createElement('div');
+        item.className = `leaderboard-item ${index < 3 ? 'rank-' + (index + 1) : ''}`;
+        if (entry.isPlayer) item.style.border = '2px solid #f72585';
+        
+        item.innerHTML = `
+            <span>#${index + 1} ${entry.name}</span>
+            <span>${entry.score} pts</span>
+        `;
+        leaderboardList.appendChild(item);
+    });
+}
+
 export function updateScoreUI() {
     scoreDisplay.innerText = `${state.obstaclesPassed}/${state.obstaclesToWin}`;
     if (progressBar) {
@@ -180,6 +226,23 @@ export function initUIListeners() {
         e.stopPropagation();
         startLevel(state.currentLevel);
     });
+
+    if (leaderboardBtn) {
+        leaderboardBtn.addEventListener('click', () => {
+            soundEffects.score();
+            homeScreen.classList.add('hidden');
+            leaderboardScreen.classList.remove('hidden');
+            fetchLeaderboard();
+        });
+    }
+
+    if (closeLeaderboardBtn) {
+        closeLeaderboardBtn.addEventListener('click', () => {
+            soundEffects.flap();
+            leaderboardScreen.classList.add('hidden');
+            homeScreen.classList.remove('hidden');
+        });
+    }
 
     levelsBtn.addEventListener('click', (e) => {
         e.stopPropagation();

@@ -56,6 +56,7 @@
                 <div style="display: flex; gap: 10px;">
                     <button id="levels-btn">Select Level</button>
                     <button id="trophies-btn" class="secondary-btn">🏆 Trophies</button>
+                    <button id="leaderboard-btn" class="secondary-btn">🌍 Global</button>
                 </div>
             </div>
         </div>
@@ -118,6 +119,17 @@
             <div class="btn-group">
                 <button id="next-level-btn">Next Level</button>
                 <button id="home-btn-complete" class="secondary-btn">Home</button>
+            </div>
+        </div>
+
+        <!-- Leaderboard Screen -->
+        <div id="leaderboard-screen" class="ui-overlay hidden">
+            <h2>Global Leaderboard</h2>
+            <div id="leaderboard-list" class="leaderboard-list">
+                <div class="leaderboard-loading">Loading scores...</div>
+            </div>
+            <div class="btn-group">
+                <button id="close-leaderboard-btn">Back</button>
             </div>
         </div>
 

@@ -382,6 +382,62 @@ button:active {
     color: #f0f0f0;
 }
 
+.trophy-item .trophy-icon {
+    font-size: 2rem;
+}
+
+.trophy-item .trophy-details {
+    flex-grow: 1;
+}
+
+.trophy-item h3 {
+    margin: 0 0 5px 0;
+    color: #e0e0e0;
+}
+
+.trophy-item p {
+    margin: 0;
+    font-size: 0.9rem;
+    color: #aaa;
+}
+
+/* Leaderboard */
+.leaderboard-list {
+    width: 100%;
+    max-height: 250px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding-right: 10px;
+}
+
+.leaderboard-item {
+    display: flex;
+    justify-content: space-between;
+    background: rgba(0, 0, 0, 0.4);
+    padding: 10px 15px;
+    border-radius: 8px;
+    border: 1px solid rgba(0, 243, 255, 0.2);
+    font-size: 1.2rem;
+    font-weight: bold;
+}
+
+.leaderboard-item.rank-1 { color: #FFD700; border-color: #FFD700; box-shadow: 0 0 10px rgba(255, 215, 0, 0.3); }
+.leaderboard-item.rank-2 { color: #C0C0C0; border-color: #C0C0C0; }
+.leaderboard-item.rank-3 { color: #CD7F32; border-color: #CD7F32; }
+
+.leaderboard-loading {
+    color: #00f3ff;
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 0.5; }
+    50% { opacity: 1; }
+    100% { opacity: 0.5; }
+}
+
 /* --- Achievement Toast --- */
 .achievement-toast {
     position: absolute;
