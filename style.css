@@ -255,6 +255,31 @@ button:active {
     transition: width 0.3s;
 }
 
+#boss-hp-container {
+    position: absolute;
+    top: 70px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 400px;
+    height: 20px;
+    background: rgba(255, 0, 0, 0.2);
+    border: 2px solid #ff0000;
+    border-radius: 10px;
+    z-index: 50;
+    overflow: hidden;
+}
+
+#boss-hp-container.hidden {
+    display: none;
+}
+
+#boss-hp-fill {
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, #ff0055, #ff0000);
+    transition: width 0.2s;
+}
+
 .sound-btn {
     position: absolute;
     top: 70px;

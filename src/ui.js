@@ -134,9 +134,14 @@ export function initUIListeners() {
     resizeCanvas();
 
     window.addEventListener('keydown', (e) => {
-        if (e.code === 'Space') {
+        if (e.code === 'ArrowUp') {
             e.preventDefault();
             handleInput();
+        } else if (e.code === 'Space' || e.key === 'Shift' || e.key === 'Control') {
+            e.preventDefault();
+            if (state.gameState === 'PLAYING') {
+                plane.shoot();
+            }
         } else if (e.code === 'KeyP' || e.code === 'Escape') {
             e.preventDefault();
             togglePause();
@@ -152,7 +157,20 @@ export function initUIListeners() {
         if (now - lastFlapTime < 50) return;
         lastFlapTime = now;
         
-        handleInput();
+        let clientX = 0;
+        if (e.touches && e.touches.length > 0) {
+            clientX = e.touches[0].clientX;
+        } else if (e.clientX !== undefined) {
+            clientX = e.clientX;
+        }
+
+        if (clientX > window.innerWidth / 2) {
+            if (state.gameState === 'PLAYING') {
+                plane.shoot();
+            }
+        } else {
+            handleInput();
+        }
     }
 
     window.addEventListener('mousedown', handlePointerDown);
@@ -550,12 +568,17 @@ export function gameOver() {
     if (gameoverHighScoreElement) gameoverHighScoreElement.innerText = state.highScore;
 }
 
+import { resetProjectiles } from './entities/Projectiles.js';
+import { resetEnemies } from './entities/Enemies.js';
+
 export function resetGameObjects() {
     obstacles.reset();
     collectibles.reset();
     resetParticles();
     resetDebris();
     resetFloatingTexts();
+    resetProjectiles();
+    resetEnemies();
     plane.y = state.gameHeight / 2;
     plane.velocity = 0;
     plane.shielded = false;

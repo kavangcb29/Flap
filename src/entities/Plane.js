@@ -110,5 +110,15 @@ export const plane = {
         this.velocity = -state.jumpStrength;
         soundEffects.flap();
         createParticles(this.x, this.y, 3);
+    },
+
+    shoot: function () {
+        const now = performance.now();
+        if (!this.lastShotTime || now - this.lastShotTime > 250) {
+            this.lastShotTime = now;
+            import('./Projectiles.js').then(module => {
+                module.shootLaser(this.x + this.width / 2, this.y);
+            });
+        }
     }
 };

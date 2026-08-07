@@ -7,6 +7,8 @@ import { handleParticles } from './entities/Particles.js';
 import { handleDebris } from './entities/Debris.js';
 import { handleFloatingTexts } from './entities/FloatingTexts.js';
 import { initUIListeners, showHome } from './ui.js';
+import { handleProjectiles } from './entities/Projectiles.js';
+import { handleEnemies } from './entities/Enemies.js';
 
 function loop() {
     if (state.gameState === 'PLAYING') {
@@ -33,6 +35,9 @@ function loop() {
         handleParticles();
         handleDebris();
         handleFloatingTexts();
+
+        handleProjectiles();
+        handleEnemies();
 
         plane.update();
         plane.draw();

@@ -37,7 +37,9 @@ export const soundEffects = {
     achievement: () => {
         playTone(587.33, 'triangle', 0.12, 587.33);
         setTimeout(() => playTone(880, 'triangle', 0.25, 880), 120);
-    }
+    },
+    laser: () => playTone(1200, 'square', 0.1, 800),
+    explosion: () => playTone(50, 'sawtooth', 0.3, 150)
 };
 
 let musicInterval = null;
