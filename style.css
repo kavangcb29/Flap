@@ -1,16 +1,12 @@
 :root {
-    --primary-color: #4cc9f0;
-    /* Blue Sky */
-    --secondary-color: #2ECC71;
-    /* Green Grass */
-    --accent-color: #ffffff;
-    /* Clouds/Text */
-    --bg-gradient: linear-gradient(180deg, #87CEEB 0%, #E0F7FA 60%, #A5D6A7 100%);
-    /* Sky to Grass */
-    --glass-bg: rgba(255, 255, 255, 0.4);
-    --glass-border: rgba(255, 255, 255, 0.6);
-    --text-color: #2c3e50;
-    --ad-bg: rgba(0, 0, 0, 0.1);
+    --primary-color: #00f3ff;
+    --secondary-color: #f72585;
+    --accent-color: #7209b7;
+    --bg-gradient: linear-gradient(180deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+    --glass-bg: rgba(10, 10, 20, 0.7);
+    --glass-border: rgba(0, 243, 255, 0.3);
+    --text-color: #e0e0e0;
+    --ad-bg: rgba(255, 255, 255, 0.05);
 }
 
 * {
@@ -89,7 +85,7 @@ canvas {
     display: flex;
     flex-direction: column;
     gap: 1.5rem;
-    box-shadow: 0 8px 32px 0 rgba(76, 201, 240, 0.2);
+    box-shadow: 0 8px 32px 0 rgba(0, 243, 255, 0.2);
     z-index: 10;
     transition: opacity 0.3s ease;
     min-width: 350px;
@@ -111,14 +107,14 @@ canvas {
 h1,
 h2 {
     font-size: 2.8rem;
-    color: #2980b9;
-    text-shadow: 2px 2px 0px rgba(255, 255, 255, 0.5);
+    color: var(--primary-color);
+    text-shadow: 0 0 10px rgba(0, 243, 255, 0.5);
     margin-bottom: 0.5rem;
 }
 
 p {
     font-size: 1.2rem;
-    color: #34495e;
+    color: #b0bec5;
     font-weight: 600;
 }
 
@@ -130,28 +126,34 @@ p {
 }
 
 button {
-    background: linear-gradient(135deg, var(--primary-color), #2980b9);
-    border: none;
+    background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+    border: 1px solid var(--glass-border);
     padding: 1rem 0;
     font-size: 1.3rem;
     font-weight: bold;
     color: white;
+    text-transform: uppercase;
+    letter-spacing: 1px;
     border-radius: 12px;
     cursor: pointer;
     transition: all 0.2s;
     font-family: inherit;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 15px rgba(0, 243, 255, 0.2);
     width: 100%;
 }
 
 button.secondary-btn {
-    background: #95a5a6;
+    background: linear-gradient(135deg, #444, #222);
+    border: 1px solid #666;
     font-size: 1.1rem;
+    text-transform: none;
+    letter-spacing: normal;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
 }
 
 button:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 15px rgba(41, 128, 185, 0.3);
+    box-shadow: 0 6px 20px rgba(0, 243, 255, 0.5);
 }
 
 button:active {
@@ -173,9 +175,11 @@ button:active {
     height: 45px;
     padding: 0;
     font-size: 1rem;
-    background: rgba(255, 255, 255, 0.6);
-    color: #2c3e50;
-    border: 2px solid #fff;
+    background: rgba(0, 243, 255, 0.1);
+    color: #00f3ff;
+    border: 1px solid #00f3ff;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0, 243, 255, 0.2);
 }
 
 .level-btn.locked {
@@ -247,8 +251,8 @@ button:active {
 #progress-bar {
     width: 0%;
     height: 100%;
-    background: linear-gradient(90deg, #2ECC71, #27ae60);
-    transition: width 0.2s ease;
+    background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+    transition: width 0.3s;
 }
 
 .sound-btn {
