@@ -1,50 +1,70 @@
 import { state, ctx } from '../state.js';
 
-export const particlesList = [];
+// Pre-allocate 1500 particles for the pool
+export const particlePool = Array.from({ length: 1500 }, () => ({ active: false }));
+
+function getFreeParticle() {
+    for (let i = 0; i < particlePool.length; i++) {
+        if (!particlePool[i].active) return particlePool[i];
+    }
+    return null;
+}
 
 export function createParticles(x, y, count) {
     for (let i = 0; i < count; i++) {
-        particlesList.push({
-            x: x - 10,
-            y: y,
-            vx: (Math.random() - 0.5) * 2 - 2,
-            vy: (Math.random() - 0.5) * 2,
-            life: 20 + Math.random() * 10,
-            color: `hsl(${Math.random() * 50 + 100}, 100%, 70%)`
-        });
+        const p = getFreeParticle();
+        if (!p) break;
+        p.active = true;
+        p.x = x - 10;
+        p.y = y;
+        p.vx = (Math.random() - 0.5) * 2 - 2;
+        p.vy = (Math.random() - 0.5) * 2;
+        p.life = 20 + Math.random() * 10;
+        p.color = `hsl(${Math.random() * 50 + 100}, 100%, 70%)`;
+        p.type = 'spark';
+        p.sizeDelta = 0;
+        p.size = 3;
     }
 }
 
 export function createJetExhaust(x, y) {
     const is4K = state.graphicsMode === '4k';
-    particlesList.push({
-        x: x,
-        y: y + (Math.random() - 0.5) * 4,
-        vx: -3 - Math.random() * 2,
-        vy: (Math.random() - 0.5) * (is4K ? 0.5 : 1),
-        life: is4K ? 16 + Math.random() * 8 : 12 + Math.random() * 6,
-        color: is4K ? (Math.random() < 0.6 ? '#FFA500' : '#FF4500') : (Math.random() < 0.5 ? '#FF4500' : '#FFD700'),
-        size: is4K ? 4 + Math.random() * 3 : 3,
-        type: 'fire'
-    });
+    const fireP = getFreeParticle();
+    if (fireP) {
+        fireP.active = true;
+        fireP.x = x;
+        fireP.y = y + (Math.random() - 0.5) * 4;
+        fireP.vx = -3 - Math.random() * 2;
+        fireP.vy = (Math.random() - 0.5) * (is4K ? 0.5 : 1);
+        fireP.life = is4K ? 16 + Math.random() * 8 : 12 + Math.random() * 6;
+        fireP.color = is4K ? (Math.random() < 0.6 ? '#FFA500' : '#FF4500') : (Math.random() < 0.5 ? '#FF4500' : '#FFD700');
+        fireP.size = is4K ? 4 + Math.random() * 3 : 3;
+        fireP.type = 'fire';
+        fireP.sizeDelta = 0;
+    }
+    
     if (state.frames % 2 === 0) {
-        particlesList.push({
-            x: x - 5,
-            y: y + (Math.random() - 0.5) * 6,
-            vx: -1.5 - Math.random(),
-            vy: (Math.random() - 0.5) * 0.5,
-            life: is4K ? 40 + Math.random() * 20 : 25 + Math.random() * 10,
-            color: is4K ? 'rgba(200, 200, 200, 0.25)' : 'rgba(255, 255, 255, 0.4)',
-            sizeDelta: is4K ? 0.25 : 0.15,
-            size: is4K ? 5 : 3,
-            type: 'smoke'
-        });
+        const smokeP = getFreeParticle();
+        if (smokeP) {
+            smokeP.active = true;
+            smokeP.x = x - 5;
+            smokeP.y = y + (Math.random() - 0.5) * 6;
+            smokeP.vx = -1.5 - Math.random();
+            smokeP.vy = (Math.random() - 0.5) * 0.5;
+            smokeP.life = is4K ? 40 + Math.random() * 20 : 25 + Math.random() * 10;
+            smokeP.color = is4K ? 'rgba(200, 200, 200, 0.25)' : 'rgba(255, 255, 255, 0.4)';
+            smokeP.sizeDelta = is4K ? 0.25 : 0.15;
+            smokeP.size = is4K ? 5 : 3;
+            smokeP.type = 'smoke';
+        }
     }
 }
 
 export function handleParticles() {
-    for (let i = 0; i < particlesList.length; i++) {
-        let p = particlesList[i];
+    for (let i = 0; i < particlePool.length; i++) {
+        let p = particlePool[i];
+        if (!p.active) continue;
+        
         p.x += p.vx;
         p.y += p.vy;
         p.life--;
@@ -72,27 +92,32 @@ export function handleParticles() {
         ctx.restore();
         
         if (p.life <= 0) {
-            particlesList.splice(i, 1);
-            i--;
+            p.active = false;
         }
     }
 }
 
 export function createFireworks(x, y) {
     for (let i = 0; i < 35; i++) {
+        const p = getFreeParticle();
+        if (!p) break;
         const angle = Math.random() * Math.PI * 2;
         const speed = 2 + Math.random() * 6;
-        particlesList.push({
-            x: x,
-            y: y,
-            vx: Math.cos(angle) * speed,
-            vy: Math.sin(angle) * speed,
-            life: 40 + Math.random() * 20,
-            color: `hsl(${Math.random() * 360}, 100%, 65%)`
-        });
+        p.active = true;
+        p.x = x;
+        p.y = y;
+        p.vx = Math.cos(angle) * speed;
+        p.vy = Math.sin(angle) * speed;
+        p.life = 40 + Math.random() * 20;
+        p.color = `hsl(${Math.random() * 360}, 100%, 65%)`;
+        p.type = 'firework';
+        p.sizeDelta = 0;
+        p.size = 3;
     }
 }
 
 export function resetParticles() {
-    particlesList.length = 0;
+    for (let i = 0; i < particlePool.length; i++) {
+        particlePool[i].active = false;
+    }
 }

@@ -1,32 +1,44 @@
 import { ctx } from '../state.js';
 
-export const debrisList = [];
+// Pre-allocate 100 debris pieces
+export const debrisPool = Array.from({ length: 100 }, () => ({ active: false }));
+
+function getFreeDebris() {
+    for (let i = 0; i < debrisPool.length; i++) {
+        if (!debrisPool[i].active) return debrisPool[i];
+    }
+    return null;
+}
 
 export function createPipeDebris(x, y, color) {
     for (let i = 0; i < 6; i++) {
-        debrisList.push({
-            x: x + (Math.random() - 0.5) * 30,
-            y: y + (Math.random() - 0.5) * 30,
-            vx: (Math.random() - 0.5) * 6,
-            vy: -4 - Math.random() * 4,
-            rv: (Math.random() - 0.5) * 0.2,
-            angle: Math.random() * Math.PI,
-            width: 12 + Math.random() * 14,
-            height: 18 + Math.random() * 22,
-            life: 60,
-            color: color || '#A0A0A0'
-        });
+        const d = getFreeDebris();
+        if (!d) break;
+        d.active = true;
+        d.x = x + (Math.random() - 0.5) * 30;
+        d.y = y + (Math.random() - 0.5) * 30;
+        d.vx = (Math.random() - 0.5) * 6;
+        d.vy = -4 - Math.random() * 4;
+        d.rv = (Math.random() - 0.5) * 0.2;
+        d.angle = Math.random() * Math.PI;
+        d.width = 12 + Math.random() * 14;
+        d.height = 18 + Math.random() * 22;
+        d.life = 60;
+        d.color = color || '#A0A0A0';
     }
 }
 
 export function handleDebris() {
-    for (let i = 0; i < debrisList.length; i++) {
-        let d = debrisList[i];
+    for (let i = 0; i < debrisPool.length; i++) {
+        let d = debrisPool[i];
+        if (!d.active) continue;
+        
         d.x += d.vx;
         d.y += d.vy;
         d.vy += 0.35;
         d.angle += d.rv;
         d.life--;
+        
         ctx.save();
         ctx.translate(d.x, d.y);
         ctx.rotate(d.angle);
@@ -37,13 +49,15 @@ export function handleDebris() {
         ctx.fillRect(-d.width / 2, -d.height / 2, d.width, d.height);
         ctx.strokeRect(-d.width / 2, -d.height / 2, d.width, d.height);
         ctx.restore();
+        
         if (d.life <= 0) {
-            debrisList.splice(i, 1);
-            i--;
+            d.active = false;
         }
     }
 }
 
 export function resetDebris() {
-    debrisList.length = 0;
+    for (let i = 0; i < debrisPool.length; i++) {
+        debrisPool[i].active = false;
+    }
 }
