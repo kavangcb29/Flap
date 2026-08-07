@@ -5,12 +5,18 @@ const PROJECTILE_SPEED = 15;
 const projectiles = [];
 
 export function shootLaser(x, y) {
-    projectiles.push({ x, y, width: 20, height: 4, active: true });
+    projectiles.push({
+        x: x,
+        y: y,
+        width: 20,
+        height: 4,
+        active: true,
+        color: state.laserColor || '#00FFFF'
+    });
     soundEffects.laser();
 }
 
 export function handleProjectiles() {
-    ctx.fillStyle = '#00f3ff';
     for (let i = projectiles.length - 1; i >= 0; i--) {
         const p = projectiles[i];
         if (!p.active) {
@@ -23,7 +29,12 @@ export function handleProjectiles() {
             p.active = false;
         }
 
+        ctx.save();
+        ctx.fillStyle = p.color;
+        ctx.shadowBlur = 15;
+        ctx.shadowColor = p.color;
         ctx.fillRect(p.x, p.y - p.height / 2, p.width, p.height);
+        ctx.restore();
     }
 }
 

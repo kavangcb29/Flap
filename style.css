@@ -412,6 +412,64 @@ button:active {
     color: #aaa;
 }
 
+/* Shop Menu */
+.shop-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+}
+
+.shop-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(0, 0, 0, 0.4);
+    padding: 10px 15px;
+    border-radius: 8px;
+    border: 1px solid rgba(0, 243, 255, 0.2);
+}
+
+.shop-item-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.shop-item h3 {
+    margin: 0;
+    color: var(--text-main);
+    font-size: 1.1rem;
+}
+
+.shop-item p {
+    margin: 0;
+    color: #aaa;
+    font-size: 0.9rem;
+}
+
+.shop-item button {
+    padding: 8px 15px;
+    font-size: 1rem;
+    cursor: pointer;
+    background: var(--secondary-color);
+    border: none;
+    border-radius: 5px;
+    color: white;
+    font-weight: bold;
+}
+
+.shop-item button:disabled {
+    background: #555;
+    cursor: not-allowed;
+}
+
+.shop-stats {
+    font-size: 1.2rem;
+    color: #FFD700;
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
 /* Leaderboard */
 .leaderboard-list {
     width: 100%;

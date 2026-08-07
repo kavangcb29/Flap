@@ -7,6 +7,10 @@ export const background = {
     clouds: [],
     stars: [],
     snowflakes: [],
+    layers: {
+        farMountains: { x: 0, speed: 0.2 },
+        nearMountains: { x: 0, speed: 0.6 }
+    },
     init: function () {
         for (let i = 0; i < 5; i++) {
             this.clouds.push({
@@ -35,10 +39,22 @@ export const background = {
         }
     },
     update: function () {
+        const speedMultiplier = state.gameSpeed || 1;
         for (let c of this.clouds) {
-            c.x -= c.speed;
+            c.x -= c.speed * speedMultiplier;
             if (c.x + c.size * 2 < 0) c.x = state.gameWidth + c.size;
         }
+        
+        this.layers.farMountains.x -= this.layers.farMountains.speed * speedMultiplier;
+        if (this.layers.farMountains.x <= -state.gameWidth) {
+            this.layers.farMountains.x += state.gameWidth;
+        }
+        
+        this.layers.nearMountains.x -= this.layers.nearMountains.speed * speedMultiplier;
+        if (this.layers.nearMountains.x <= -state.gameWidth) {
+            this.layers.nearMountains.x += state.gameWidth;
+        }
+
         if (currentTheme.name === 'Snow') {
             for (let s of this.snowflakes) {
                 s.y += s.vy;
@@ -78,30 +94,52 @@ export const background = {
             ctx.globalAlpha = 1;
         }
 
-        // Offscreen Prerendering for Mountains
-        if (!this.mountainCanvas || this.lastTheme !== currentTheme.name || this.lastHeight !== state.gameHeight) {
-            this.mountainCanvas = document.createElement('canvas');
-            this.mountainCanvas.width = state.gameWidth;
-            this.mountainCanvas.height = state.gameHeight;
-            const mCtx = this.mountainCanvas.getContext('2d');
+        // Offscreen Prerendering for Parallax Mountains
+        if (!this.farMountainCanvas || this.lastTheme !== currentTheme.name || this.lastHeight !== state.gameHeight) {
+            this.farMountainCanvas = document.createElement('canvas');
+            this.farMountainCanvas.width = state.gameWidth;
+            this.farMountainCanvas.height = state.gameHeight;
+            const fCtx = this.farMountainCanvas.getContext('2d');
             
-            mCtx.fillStyle = currentTheme.mountains;
-            mCtx.beginPath();
-            mCtx.moveTo(0, state.gameHeight);
-            mCtx.lineTo(200, state.gameHeight - 150);
-            mCtx.lineTo(400, state.gameHeight - 50);
-            mCtx.lineTo(600, state.gameHeight - 200);
-            mCtx.lineTo(900, state.gameHeight - 100);
-            mCtx.lineTo(state.gameWidth, state.gameHeight - 250);
-            mCtx.lineTo(state.gameWidth, state.gameHeight);
-            mCtx.lineTo(0, state.gameHeight);
-            mCtx.fill();
+            fCtx.fillStyle = currentTheme.mountains;
+            fCtx.globalAlpha = 0.6;
+            fCtx.beginPath();
+            fCtx.moveTo(0, state.gameHeight);
+            fCtx.lineTo(200, state.gameHeight - 150);
+            fCtx.lineTo(400, state.gameHeight - 50);
+            fCtx.lineTo(600, state.gameHeight - 200);
+            fCtx.lineTo(900, state.gameHeight - 100);
+            fCtx.lineTo(state.gameWidth, state.gameHeight - 250);
+            fCtx.lineTo(state.gameWidth, state.gameHeight);
+            fCtx.fill();
+
+            this.nearMountainCanvas = document.createElement('canvas');
+            this.nearMountainCanvas.width = state.gameWidth;
+            this.nearMountainCanvas.height = state.gameHeight;
+            const nCtx = this.nearMountainCanvas.getContext('2d');
+            
+            nCtx.fillStyle = currentTheme.mountains;
+            nCtx.beginPath();
+            nCtx.moveTo(0, state.gameHeight);
+            nCtx.lineTo(150, state.gameHeight - 100);
+            nCtx.lineTo(350, state.gameHeight - 250);
+            nCtx.lineTo(550, state.gameHeight - 150);
+            nCtx.lineTo(800, state.gameHeight - 300);
+            nCtx.lineTo(state.gameWidth, state.gameHeight - 150);
+            nCtx.lineTo(state.gameWidth, state.gameHeight);
+            nCtx.fill();
             
             this.lastTheme = currentTheme.name;
             this.lastHeight = state.gameHeight;
         }
         
-        ctx.drawImage(this.mountainCanvas, 0, 0);
+        const fx = this.layers.farMountains.x;
+        ctx.drawImage(this.farMountainCanvas, fx, 0);
+        ctx.drawImage(this.farMountainCanvas, fx + state.gameWidth, 0);
+        
+        const nx = this.layers.nearMountains.x;
+        ctx.drawImage(this.nearMountainCanvas, nx, 0);
+        ctx.drawImage(this.nearMountainCanvas, nx + state.gameWidth, 0);
 
         ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
         for (let c of this.clouds) {

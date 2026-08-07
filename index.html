@@ -56,6 +56,7 @@
                 <div style="display: flex; gap: 10px;">
                     <button id="levels-btn">Select Level</button>
                     <button id="trophies-btn" class="secondary-btn">🏆 Trophies</button>
+                    <button id="shop-btn" class="secondary-btn">🛒 Shop</button>
                     <button id="leaderboard-btn" class="secondary-btn">🌍 Global</button>
                     <button id="settings-btn" class="secondary-btn">⚙️ Settings</button>
                 </div>
@@ -171,6 +172,18 @@
             </div>
         </div>
 
+        <!-- Shop Screen -->
+        <div id="shop-screen" class="ui-overlay hidden">
+            <h2>🛒 Upgrades & Skins</h2>
+            <div class="shop-stats">Coins: <span id="shop-coins-val">0</span></div>
+            <div class="shop-grid" id="shop-grid" style="max-height: 250px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; width: 100%;">
+                <!-- Dynamic shop items injected here -->
+            </div>
+            <div class="btn-group">
+                <button id="close-shop-btn">Back</button>
+            </div>
+        </div>
+
         <!-- Leaderboard Screen -->
         <div id="leaderboard-screen" class="ui-overlay hidden">
             <h2>Global Leaderboard</h2>
@@ -212,6 +225,51 @@
         </div>
     </div>
     <script type="module" src="src/main.js"></script>
+    <!-- Monetization SDKs (Placeholders) -->
+    <!-- GameDistribution SDK -->
+    <script>
+        window["GD_OPTIONS"] = {
+            "gameId": "YOUR_GD_GAME_ID_HERE",
+            "onEvent": function(event) {
+                switch (event.name) {
+                    case "SDK_GAME_START":
+                        // resume game logic here
+                        break;
+                    case "SDK_GAME_PAUSE":
+                        // pause game logic here
+                        break;
+                    case "SDK_GDPR_TRACKING":
+                        // this event is triggered when your user doesn't want to be tracked
+                        break;
+                    case "SDK_GDPR_NOT_TRACKING":
+                        // this event is triggered when your user doesn't want to be tracked
+                        break;
+                    case "SDK_REWARDED_WATCH_COMPLETE":
+                        // this event is triggered when your user completely watched rewarded ad
+                        break;
+                }
+            }
+        };
+        (function(d, s, id) {
+            var js, fjs = d.getElementsByTagName(s)[0];
+            if (d.getElementById(id)) return;
+            js = d.createElement(s);
+            js.id = id;
+            js.src = 'https://html5.api.gamedistribution.com/main.min.js';
+            fjs.parentNode.insertBefore(js, fjs);
+        }(document, 'script', 'gamedistribution-jssdk'));
+    </script>
+    
+    <!-- Ko-fi Widget -->
+    <script src='https://storage.ko-fi.com/cdn/scripts/overlay-widget.js'></script>
+    <script>
+      kofiWidgetOverlay.draw('kavangcb', {
+        'type': 'floating-chat',
+        'floating-chat.donateButton.text': 'Support Game',
+        'floating-chat.donateButton.background-color': '#f72585',
+        'floating-chat.donateButton.text-color': '#fff'
+      });
+    </script>
 </body>
 
 </html>

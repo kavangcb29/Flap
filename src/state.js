@@ -15,6 +15,7 @@ export const state = {
     soundEnabled: true,
     musicEnabled: false,
     selectedSkin: parseInt(localStorage.getItem('flappy_skin') || '0', 10),
+    laserColor: localStorage.getItem('flappy_laser') || '#00FFFF',
     
     // Custom Settings
     uiTheme: localStorage.getItem('flappy_ui_theme') || 'dark',

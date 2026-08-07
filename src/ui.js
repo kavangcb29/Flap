@@ -214,6 +214,89 @@ resetSettingsBtn.addEventListener('click', () => {
 // Initialize Settings UI on load
 applySettingsUI();
 
+// Shop Logic
+const shopBtn = document.getElementById('shop-btn');
+const shopScreen = document.getElementById('shop-screen');
+const closeShopBtn = document.getElementById('close-shop-btn');
+const shopGrid = document.getElementById('shop-grid');
+const shopCoinsVal = document.getElementById('shop-coins-val');
+
+const shopItems = [
+    { id: 'skin_1', type: 'skin', name: 'Gold Plane', desc: 'A shiny golden plane', price: 100, val: 1 },
+    { id: 'skin_2', type: 'skin', name: 'Neon Plane', desc: 'Cyberpunk neon aesthetics', price: 250, val: 2 },
+    { id: 'laser_red', type: 'laser', name: 'Red Lasers', desc: 'Shoots red lasers', price: 150, val: '#ff0000' },
+    { id: 'laser_green', type: 'laser', name: 'Green Lasers', desc: 'Shoots green lasers', price: 150, val: '#00ff00' }
+];
+
+let unlockedShopItems = JSON.parse(localStorage.getItem('flappy_unlocked_items') || '[]');
+
+export function updateShopUI() {
+    shopCoinsVal.innerText = state.totalCoins;
+    shopGrid.innerHTML = '';
+    
+    shopItems.forEach(item => {
+        const isUnlocked = unlockedShopItems.includes(item.id);
+        let isEquipped = false;
+        if (item.type === 'skin' && state.selectedSkin === item.val) isEquipped = true;
+        if (item.type === 'laser' && state.laserColor === item.val) isEquipped = true;
+        
+        const el = document.createElement('div');
+        el.className = 'shop-item';
+        
+        const btnText = isEquipped ? 'Equipped' : (isUnlocked ? 'Equip' : `Buy (${item.price} 💰)`);
+        const btnClass = isEquipped ? 'disabled' : '';
+        const btnDisabled = isEquipped ? 'disabled' : '';
+        
+        el.innerHTML = `
+            <div class="shop-item-info">
+                <h3>${item.name}</h3>
+                <p>${item.desc}</p>
+            </div>
+            <button class="${btnClass}" ${btnDisabled} onclick="window.handleShopClick('${item.id}')">${btnText}</button>
+        `;
+        shopGrid.appendChild(el);
+    });
+}
+
+window.handleShopClick = function(id) {
+    const item = shopItems.find(i => i.id === id);
+    if (!item) return;
+    
+    if (unlockedShopItems.includes(id)) {
+        // Equip
+        if (item.type === 'skin') {
+            state.selectedSkin = item.val;
+            localStorage.setItem('flappy_skin', item.val);
+        } else if (item.type === 'laser') {
+            state.laserColor = item.val;
+            localStorage.setItem('flappy_laser', item.val);
+        }
+        soundEffects.flap();
+    } else {
+        // Buy
+        if (state.totalCoins >= item.price) {
+            state.totalCoins -= item.price;
+            unlockedShopItems.push(id);
+            localStorage.setItem('flappy_unlocked_items', JSON.stringify(unlockedShopItems));
+            
+            // Auto equip
+            if (item.type === 'skin') {
+                state.selectedSkin = item.val;
+                localStorage.setItem('flappy_skin', item.val);
+            } else if (item.type === 'laser') {
+                state.laserColor = item.val;
+                localStorage.setItem('flappy_laser', item.val);
+            }
+            
+            soundEffects.score();
+            import('./state.js').then(s => s.saveProgress());
+        } else {
+            soundEffects.shieldBreak(); // Use as error sound
+        }
+    }
+    updateShopUI();
+};
+
 export function updateScoreUI() {
     scoreDisplay.innerText = `${state.obstaclesPassed}/${state.obstaclesToWin}`;
     if (progressBar) {
@@ -355,6 +438,23 @@ export function initUIListeners() {
         closeSettingsBtn.addEventListener('click', () => {
             soundEffects.flap();
             settingsScreen.classList.add('hidden');
+            homeScreen.classList.remove('hidden');
+        });
+    }
+
+    if (shopBtn) {
+        shopBtn.addEventListener('click', () => {
+            soundEffects.score();
+            homeScreen.classList.add('hidden');
+            shopScreen.classList.remove('hidden');
+            updateShopUI();
+        });
+    }
+
+    if (closeShopBtn) {
+        closeShopBtn.addEventListener('click', () => {
+            soundEffects.flap();
+            shopScreen.classList.add('hidden');
             homeScreen.classList.remove('hidden');
         });
     }

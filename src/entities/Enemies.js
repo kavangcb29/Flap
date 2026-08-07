@@ -10,6 +10,7 @@ import { gameOver } from '../ui.js';
 let enemies = [];
 let boss = null;
 let lastBossSpawnLevel = 0;
+let bossProjectiles = [];
 
 export function handleEnemies() {
     if (state.gameState !== 'PLAYING') return;
@@ -27,7 +28,14 @@ export function handleEnemies() {
 
     for (let i = enemies.length - 1; i >= 0; i--) {
         const e = enemies[i];
-        e.x -= state.gameSpeed * 1.5;
+        
+        if (e.type === 'homing') {
+            e.x -= state.gameSpeed * 2.2;
+            if (e.y < plane.y) e.y += 2;
+            if (e.y > plane.y) e.y -= 2;
+        } else {
+            e.x -= state.gameSpeed * 1.5;
+        }
 
         for (let j = projectiles.length - 1; j >= 0; j--) {
             const p = projectiles[j];
@@ -66,11 +74,34 @@ export function handleEnemies() {
     }
 
     if (boss) {
+        const inPhase2 = boss.hp < boss.maxHp / 2;
+        
         boss.y += boss.vy;
         if (boss.y < 50 || boss.y > state.gameHeight - 50) boss.vy *= -1;
 
+        if (inPhase2) {
+            boss.vy = Math.sign(boss.vy) * 6; // Move faster in Phase 2
+        } else {
+            boss.vy = Math.sign(boss.vy) * 3;
+        }
+
         if (boss.x > state.gameWidth - 150) {
             boss.x -= 2;
+        }
+        
+        if (!boss.lastShot) boss.lastShot = Date.now();
+        const shootDelay = inPhase2 ? 400 : 1000;
+        if (Date.now() - boss.lastShot > shootDelay) {
+            bossProjectiles.push({ 
+                x: boss.x - boss.width/2, 
+                y: boss.y, 
+                width: 20, 
+                height: 10, 
+                active: true, 
+                vy: inPhase2 ? (Math.random() - 0.5) * 6 : 0 
+            });
+            boss.lastShot = Date.now();
+            if (soundEffects.laser) soundEffects.laser();
         }
 
         for (let j = projectiles.length - 1; j >= 0; j--) {
@@ -104,20 +135,49 @@ export function handleEnemies() {
 
         if (boss) drawBoss();
     }
+    
+    for (let i = bossProjectiles.length - 1; i >= 0; i--) {
+        const bp = bossProjectiles[i];
+        bp.x -= state.gameSpeed * 2.5;
+        if (bp.vy) bp.y += bp.vy;
+        
+        ctx.fillStyle = '#ff0000';
+        ctx.fillRect(bp.x, bp.y - bp.height/2, bp.width, bp.height);
+
+        if (checkCollision(bp, plane)) {
+            if (plane.shielded) {
+                plane.shielded = false;
+                plane.invincible = 60;
+                soundEffects.shieldBreak();
+                bossProjectiles.splice(i, 1);
+            } else if (plane.invincible <= 0) {
+                gameOver();
+                return;
+            }
+        } else if (bp.x < 0) {
+            bossProjectiles.splice(i, 1);
+        }
+    }
 }
 
 function spawnEnemy() {
+    const isHoming = Math.random() < 0.3;
     enemies.push({
         x: state.gameWidth + 50,
         y: 50 + Math.random() * (state.gameHeight - 100),
-        width: 30,
-        height: 30,
-        hp: 20
+        width: isHoming ? 40 : 30,
+        height: isHoming ? 15 : 30,
+        hp: isHoming ? 10 : 20,
+        type: isHoming ? 'homing' : 'drone'
     });
 }
 
 function drawEnemy(e) {
-    ctx.fillStyle = '#ff0055';
+    if (e.type === 'homing') {
+        ctx.fillStyle = '#ff8800'; // Orange for homing
+    } else {
+        ctx.fillStyle = '#ff0055';
+    }
     ctx.fillRect(e.x, e.y, e.width, e.height);
 }
 
@@ -148,25 +208,37 @@ function spawnBoss() {
 
 function killBoss() {
     soundEffects.explosion();
-    for(let i = 0; i<5; i++) {
+    const bx = boss.x;
+    const by = boss.y;
+    
+    for(let i = 0; i < 20; i++) {
         setTimeout(() => {
-            if (!boss && i > 0) return; 
-            const bx = boss ? boss.x : state.gameWidth - 150;
-            const by = boss ? boss.y : state.gameHeight / 2;
-            createParticles(bx + (Math.random()-0.5)*100, by + (Math.random()-0.5)*100, 20);
-            createPipeDebris(bx + (Math.random()-0.5)*100, by + (Math.random()-0.5)*100, '#880000');
+            const rx = bx + (Math.random()-0.5)*200;
+            const ry = by + (Math.random()-0.5)*200;
+            createParticles(rx, ry, 30);
+            createPipeDebris(rx, ry, '#880000');
             soundEffects.explosion();
-        }, i * 200);
+            if (soundEffects.coin) soundEffects.coin();
+            state.score += 20;
+            addFloatingText(rx, ry, '+20', '#ffd700');
+        }, i * 150);
     }
-    state.score += 100;
-    addFloatingText(boss.x, boss.y, '+100', '#00ff00');
+    
+    state.score += 500;
+    addFloatingText(bx, by, '+500', '#00ff00');
     boss = null;
+    bossProjectiles = [];
     const ui = document.getElementById('boss-hp-container');
     if (ui) ui.classList.add('hidden');
 }
 
 function drawBoss() {
-    ctx.fillStyle = '#880000';
+    if (boss.hp < boss.maxHp / 2) {
+        const pulse = Math.abs(Math.sin(Date.now() / 150));
+        ctx.fillStyle = `rgb(255, ${Math.floor(pulse * 100)}, ${Math.floor(pulse * 100)})`;
+    } else {
+        ctx.fillStyle = '#880000';
+    }
     ctx.fillRect(boss.x - boss.width/2, boss.y - boss.height/2, boss.width, boss.height);
 }
 
@@ -206,6 +278,7 @@ function checkCollision(obj1, obj2) {
 export function resetEnemies() {
     enemies = [];
     boss = null;
+    bossProjectiles = [];
     lastBossSpawnLevel = 0;
     const ui = document.getElementById('boss-hp-container');
     if (ui) ui.classList.add('hidden');
