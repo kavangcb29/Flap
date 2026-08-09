@@ -2,8 +2,8 @@ name: Auto Contributor
 
 on:
   schedule:
-    # Runs every 6 hours (4 commits a day for dark green squares)
-    - cron: '0 */6 * * *'
+    # Runs every 2 hours (12 commits a day for maximum dark green squares)
+    - cron: '0 */2 * * *'
   workflow_dispatch:
     # Allows manual triggering from the GitHub Actions tab
 
