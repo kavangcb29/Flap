@@ -1,0 +1,32 @@
+name: Auto Contributor
+
+on:
+  schedule:
+    # Runs every 6 hours (4 commits a day for dark green squares)
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
+    # Allows manual triggering from the GitHub Actions tab
+
+jobs:
+  auto-commit:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Generate Activity
+        run: |
+          echo "Activity logged at $(date -u)" >> ACTIVITY.md
+
+      - name: Commit and Push
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add ACTIVITY.md
+          git commit -m "Auto-generate GitHub activity [skip ci]" || echo "No changes to commit"
+          git push origin main
