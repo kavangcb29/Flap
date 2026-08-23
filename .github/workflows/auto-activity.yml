@@ -2,8 +2,8 @@ name: Auto Contributor
 
 on:
   schedule:
-    # Runs every 3 hours (8 commits a day)
-    - cron: '0 */3 * * *'
+    # Runs once a day at midnight UTC
+    - cron: '0 0 * * *'
   workflow_dispatch:
     # Allows manual triggering from the GitHub Actions tab
 
@@ -19,14 +19,19 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Generate Activity
-        run: |
-          echo "Activity logged at $(date -u)" >> ACTIVITY.md
-
-      - name: Commit and Push
+      - name: Generate Random Commits and Push
         run: |
           git config --global user.name "kavangcb29"
           git config --global user.email "kavangcb@gmail.com"
-          git add ACTIVITY.md
-          git commit -m "Auto-generate GitHub activity [skip ci]" || echo "No changes to commit"
+          
+          # Generate a random number between 8 and 20
+          NUM_COMMITS=$(( ( RANDOM % 13 )  + 8 ))
+          echo "Targeting $NUM_COMMITS commits for today."
+          
+          for i in $(seq 1 $NUM_COMMITS); do
+            echo "Activity logged at $(date -u) - batch $i" >> ACTIVITY.md
+            git add ACTIVITY.md
+            git commit -m "Auto-generate GitHub activity batch $i [skip ci]"
+          done
+          
           git push origin main
